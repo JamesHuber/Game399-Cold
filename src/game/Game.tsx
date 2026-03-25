@@ -259,11 +259,30 @@ function PlayerShip() {
         <meshStandardMaterial color="#8d8777" roughness={0.76} metalness={0.26} />
       </mesh>
 
-      {/* Shield (left arm) */}
-      <mesh position={[-0.28, 0.1, 0]} rotation={[0, Math.PI / 2, 0]} castShadow>
-        <cylinderGeometry args={[0.14, 0.14, 0.04, 16]} />
-        <meshStandardMaterial color={player.blocking ? '#c9a45a' : '#4f4338'} roughness={0.9} metalness={0.1} />
+      {/* Left arm (shield appears only while blocking) */}
+      <mesh position={[-0.23, 0.08, 0]} castShadow>
+        <boxGeometry args={[0.06, 0.2, 0.06]} />
+        <meshStandardMaterial color="#7a7466" roughness={0.9} metalness={0.1} />
       </mesh>
+      {player.blocking ? (
+        <group position={[0, 0.1, 0.34]}>
+          {/* Main shield body */}
+          <mesh castShadow>
+            <cylinderGeometry args={[0.16, 0.16, 0.05, 20]} />
+            <meshStandardMaterial color="#6b4a2f" roughness={0.95} metalness={0.05} />
+          </mesh>
+          {/* Metal rim */}
+          <mesh castShadow>
+            <torusGeometry args={[0.16, 0.014, 10, 30]} />
+            <meshStandardMaterial color="#9a917f" roughness={0.68} metalness={0.42} />
+          </mesh>
+          {/* Boss */}
+          <mesh position={[0, 0, 0.028]} castShadow>
+            <sphereGeometry args={[0.045, 12, 12]} />
+            <meshStandardMaterial color="#b59b67" roughness={0.62} metalness={0.35} />
+          </mesh>
+        </group>
+      ) : null}
 
       {/* Sword (right arm) */}
       <mesh position={[0.28, 0.06, 0.02]} rotation={[0, 0, -0.22]} castShadow>
@@ -338,14 +357,61 @@ function Enemies() {
   return (
     <group>
       {enemies.map((e) => (
-        <mesh key={e.id} position={[e.pos.x, 0.22, e.pos.y]}>
-          <capsuleGeometry args={[0.25, 0.35, 4, 8]} />
-          <meshStandardMaterial
-            color={e.hurtT > 0 ? '#c98266' : e.kind === 'raider' ? '#7c4b3b' : '#6a7a4d'}
-            emissive={e.hurtT > 0 ? '#2a0700' : '#000000'}
-            roughness={1}
-          />
-        </mesh>
+        <group key={e.id} position={[e.pos.x, 0.22, e.pos.y]}>
+          {e.kind === 'raider' ? (
+            <>
+              {/* Wizard */}
+              <mesh castShadow>
+                <cylinderGeometry args={[0.2, 0.28, 0.52, 10]} />
+                <meshStandardMaterial
+                  color={e.hurtT > 0 ? '#c98266' : '#7c4b3b'}
+                  emissive={e.hurtT > 0 ? '#2a0700' : '#000000'}
+                  roughness={0.95}
+                />
+              </mesh>
+              <mesh position={[0, 0.33, 0]} castShadow>
+                <sphereGeometry args={[0.12, 10, 10]} />
+                <meshStandardMaterial color="#c3a17d" roughness={0.92} />
+              </mesh>
+              <mesh position={[0, 0.5, 0]} castShadow>
+                <coneGeometry args={[0.18, 0.26, 10]} />
+                <meshStandardMaterial color="#50352a" roughness={0.96} />
+              </mesh>
+              <mesh position={[0.2, 0.14, 0]} rotation={[0, 0, -0.25]} castShadow>
+                <boxGeometry args={[0.03, 0.46, 0.03]} />
+                <meshStandardMaterial color="#8f7a61" roughness={0.8} />
+              </mesh>
+              <mesh position={[0.27, 0.35, 0]}>
+                <sphereGeometry args={[0.045, 8, 8]} />
+                <meshBasicMaterial color="#c98266" />
+              </mesh>
+            </>
+          ) : (
+            <>
+              {/* Goblin / troll */}
+              <mesh castShadow>
+                <capsuleGeometry args={[0.22, 0.3, 4, 8]} />
+                <meshStandardMaterial
+                  color={e.hurtT > 0 ? '#c98266' : '#6a7a4d'}
+                  emissive={e.hurtT > 0 ? '#2a0700' : '#000000'}
+                  roughness={1}
+                />
+              </mesh>
+              <mesh position={[0, 0.3, 0]} castShadow>
+                <sphereGeometry args={[0.13, 10, 10]} />
+                <meshStandardMaterial color={e.hurtT > 0 ? '#c98266' : '#6f8b52'} roughness={0.95} />
+              </mesh>
+              <mesh position={[0.06, 0.36, 0.06]} rotation={[0, 0, 0.4]} castShadow>
+                <coneGeometry args={[0.03, 0.12, 6]} />
+                <meshStandardMaterial color="#7f6b4f" roughness={0.98} />
+              </mesh>
+              <mesh position={[-0.06, 0.36, 0.06]} rotation={[0, 0, -0.4]} castShadow>
+                <coneGeometry args={[0.03, 0.12, 6]} />
+                <meshStandardMaterial color="#7f6b4f" roughness={0.98} />
+              </mesh>
+            </>
+          )}
+        </group>
       ))}
     </group>
   )
@@ -593,7 +659,16 @@ function WorldStep() {
       const ppos = useGame.getState().player.pos
       const toPlayer = Math.hypot(ep.pos.x - ppos.x, ep.pos.y - ppos.y)
       if (toPlayer < 0.65) {
-        applyPlayerDamage(12)
+        const pstate = useGame.getState().player
+        const blocked = pstate.blocking && pstate.stamina > 0 && pstate.dodgingT <= 0
+        if (!blocked) {
+          applyPlayerDamage(12)
+        } else {
+          // Blocking absorbs projectile impact at stamina cost.
+          useGame.setState((s) => ({
+            player: { ...s.player, stamina: Math.max(0, s.player.stamina - 12) },
+          }))
+        }
         enemyProjToConsume.push(ep.id)
       }
     }

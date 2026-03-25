@@ -261,12 +261,16 @@ export const useGame = create<World & GameActions>((set, get) => ({
     if (s.player.gunCooldown > 0) return
     const f = s.player.facing
     const speed = 18
+    const muzzleOffset = 0.38
     set((prev) => ({
       bullets: [
         ...prev.bullets,
         {
           id: 'b-' + uid(),
-          pos: { ...prev.player.pos },
+          pos: {
+            x: prev.player.pos.x + f.x * muzzleOffset,
+            y: prev.player.pos.y + f.y * muzzleOffset,
+          },
           vel: { x: f.x * speed, y: f.y * speed },
           life: 1.0,
         },
