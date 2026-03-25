@@ -7,11 +7,19 @@ export type Enemy = {
   pos: Vec2
   vel: Vec2
   hp: number
-  kind: 'troll'
+  kind: 'troll' | 'raider'
   hurtT: number
+  shootCooldown: number
 }
 
 export type Bullet = {
+  id: string
+  pos: Vec2
+  vel: Vec2
+  life: number
+}
+
+export type EnemyProjectile = {
   id: string
   pos: Vec2
   vel: Vec2
@@ -56,6 +64,7 @@ export type World = {
   player: Player
   enemies: Enemy[]
   bullets: Bullet[]
+  enemyProjectiles: EnemyProjectile[]
   npcs: Npc[]
   nodes: Node[]
   gates: Gate[]
@@ -66,6 +75,46 @@ export type World = {
 }
 
 const uid = () => Math.random().toString(16).slice(2)
+
+type Rect = { minX: number; maxX: number; minY: number; maxY: number }
+
+// Must match the inner wall colliders defined in Game.tsx.
+const LOS_WALLS: Rect[] = [
+  { minX: 0 - 4.25, maxX: 0 + 4.25, minY: 4.8 - 0.35, maxY: 4.8 + 0.35 },
+  { minX: -5.2 - 0.35, maxX: -5.2 + 0.35, minY: -1.2 - 3.1, maxY: -1.2 + 3.1 },
+  { minX: 5.4 - 0.35, maxX: 5.4 + 0.35, minY: -3.2 - 3.6, maxY: -3.2 + 3.6 },
+  { minX: 0.8 - 3.1, maxX: 0.8 + 3.1, minY: -7.0 - 0.35, maxY: -7.0 + 0.35 },
+]
+
+function segmentIntersectsRect(ax: number, ay: number, bx: number, by: number, r: Rect): boolean {
+  const dx = bx - ax
+  const dy = by - ay
+  let t0 = 0
+  let t1 = 1
+
+  const clip = (p: number, q: number) => {
+    if (Math.abs(p) < 1e-8) return q >= 0
+    const t = q / p
+    if (p < 0) {
+      if (t > t1) return false
+      if (t > t0) t0 = t
+    } else {
+      if (t < t0) return false
+      if (t < t1) t1 = t
+    }
+    return true
+  }
+
+  if (!clip(-dx, ax - r.minX)) return false
+  if (!clip(dx, r.maxX - ax)) return false
+  if (!clip(-dy, ay - r.minY)) return false
+  if (!clip(dy, r.maxY - ay)) return false
+  return t0 <= t1
+}
+
+function hasLineOfSight(from: Vec2, to: Vec2) {
+  return !LOS_WALLS.some((w) => segmentIntersectsRect(from.x, from.y, to.x, to.y, w))
+}
 
 export type GameActions = {
   reset(): void
@@ -84,10 +133,12 @@ export type GameActions = {
   applyEnemyHit(enemyId: string, damage: number): void
   applyPlayerDamage(damage: number): void
   consumeBullets(bulletIds: string[]): void
+  consumeEnemyProjectiles(projectileIds: string[]): void
   setNodeCharged(nodeId: string, charged: boolean): void
   setGateOpen(gateId: string, open: boolean): void
   setObjective(objective: string): void
   setPlayerPos(pos: Vec2): void
+  setEnemyPos(enemyId: string, pos: Vec2): void
   toggleDebugMode(): void
 }
 
@@ -113,17 +164,20 @@ const initialWorld = (): World => ({
       hp: 30,
       kind: 'troll',
       hurtT: 0,
+      shootCooldown: 0,
     },
     {
       id: 'e-' + uid(),
       pos: { x: -4, y: -2 },
       vel: { x: 0, y: 0 },
       hp: 30,
-      kind: 'troll',
+      kind: 'raider',
       hurtT: 0,
+      shootCooldown: 0.9,
     },
   ],
   bullets: [],
+  enemyProjectiles: [],
   npcs: [
     {
       id: 'npc-captain',
@@ -276,6 +330,12 @@ export const useGame = create<World & GameActions>((set, get) => ({
     set((s) => ({ bullets: s.bullets.filter((b) => !kill.has(b.id)) }))
   },
 
+  consumeEnemyProjectiles(projectileIds) {
+    if (projectileIds.length === 0) return
+    const kill = new Set(projectileIds)
+    set((s) => ({ enemyProjectiles: s.enemyProjectiles.filter((b) => !kill.has(b.id)) }))
+  },
+
   setNodeCharged(nodeId, charged) {
     set((s) => ({ nodes: s.nodes.map((n) => (n.id === nodeId ? { ...n, charged } : n)) }))
   },
@@ -290,6 +350,12 @@ export const useGame = create<World & GameActions>((set, get) => ({
 
   setPlayerPos(pos) {
     set((s) => ({ player: { ...s.player, pos } }))
+  },
+
+  setEnemyPos(enemyId, pos) {
+    set((s) => ({
+      enemies: s.enemies.map((e) => (e.id === enemyId ? { ...e, pos } : e)),
+    }))
   },
 
   toggleDebugMode() {
@@ -328,27 +394,76 @@ export const useGame = create<World & GameActions>((set, get) => ({
         }))
         .filter((b) => b.life > 0)
 
-      // Enemies (simple seek)
+      // Enemies
+      const spawnedEnemyProjectiles: EnemyProjectile[] = []
       const enemies = s.enemies.map((e) => {
         const dx = player.pos.x - e.pos.x
         const dy = player.pos.y - e.pos.y
         const d = Math.hypot(dx, dy)
-        const aggro = d < 10 ? 1 : 0.2
-        const spd = 2.6 * aggro
-        const vx = d > 1e-3 ? (dx / d) * spd : 0
-        const vy = d > 1e-3 ? (dy / d) * spd : 0
+        let vx = 0
+        let vy = 0
+        let shootCooldown = Math.max(0, e.shootCooldown - dt)
+
+        if (e.kind === 'raider') {
+          const inSightRange = d < 12
+          const seesPlayer = inSightRange && hasLineOfSight(e.pos, player.pos)
+
+          if (seesPlayer && d > 8) {
+            const spd = 2.4
+            vx = d > 1e-3 ? (dx / d) * spd : 0
+            vy = d > 1e-3 ? (dy / d) * spd : 0
+          } else if (seesPlayer && d < 5.5) {
+            const spd = 2.0
+            vx = d > 1e-3 ? (-dx / d) * spd : 0
+            vy = d > 1e-3 ? (-dy / d) * spd : 0
+          } else if (!seesPlayer) {
+            // If LOS is blocked, path by pressure like melee enemies until LOS is regained.
+            const aggro = d < 10 ? 1 : 0.2
+            const spd = 2.6 * aggro
+            vx = d > 1e-3 ? (dx / d) * spd : 0
+            vy = d > 1e-3 ? (dy / d) * spd : 0
+          }
+
+          if (seesPlayer && shootCooldown <= 0 && d > 1e-3) {
+            const dirx = dx / d
+            const diry = dy / d
+            const speed = 11
+            spawnedEnemyProjectiles.push({
+              id: 'ep-' + uid(),
+              pos: { x: e.pos.x, y: e.pos.y },
+              vel: { x: dirx * speed, y: diry * speed },
+              life: 1.4,
+            })
+            shootCooldown = 1.25
+          }
+        } else {
+          const aggro = d < 10 ? 1 : 0.2
+          const spd = 2.6 * aggro
+          vx = d > 1e-3 ? (dx / d) * spd : 0
+          vy = d > 1e-3 ? (dy / d) * spd : 0
+        }
         return {
           ...e,
           hurtT: Math.max(0, e.hurtT - dt),
+          shootCooldown,
           vel: { x: vx, y: vy },
           pos: { x: e.pos.x + vx * dt, y: e.pos.y + vy * dt },
         }
       })
 
+      const enemyProjectiles = [...s.enemyProjectiles, ...spawnedEnemyProjectiles]
+        .map((b) => ({
+          ...b,
+          life: b.life - dt,
+          pos: { x: b.pos.x + b.vel.x * dt, y: b.pos.y + b.vel.y * dt },
+        }))
+        .filter((b) => b.life > 0)
+
       return {
         time: t,
         player,
         bullets,
+        enemyProjectiles,
         enemies,
       }
     })

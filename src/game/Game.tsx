@@ -229,18 +229,58 @@ function PlayerShip() {
 
   return (
     <group ref={ref}>
-      <mesh castShadow>
-        <coneGeometry args={[0.35, 0.8, 16]} />
-        <meshStandardMaterial color="#8f8a73" roughness={0.92} />
+      {/* Helmet */}
+      <mesh position={[0, 0.34, 0]} castShadow>
+        <sphereGeometry args={[0.16, 18, 16]} />
+        <meshStandardMaterial color="#9b978a" roughness={0.72} metalness={0.35} />
       </mesh>
-      <mesh position={[0, -0.1, -0.15]} castShadow>
-        <boxGeometry args={[0.45, 0.12, 0.55]} />
-        <meshStandardMaterial color="#4f4338" roughness={0.98} />
+      <mesh position={[0, 0.32, 0.1]} castShadow>
+        <boxGeometry args={[0.12, 0.09, 0.05]} />
+        <meshStandardMaterial color="#6f6a5d" roughness={0.78} metalness={0.3} />
       </mesh>
-      <mesh position={[0, -0.04, 0.3]}>
-        <sphereGeometry args={[0.08, 24, 24]} />
-        <meshStandardMaterial color={player.blocking ? '#d6b56f' : '#6d8fb3'} emissive="#0a0a0a" />
+
+      {/* Torso armor */}
+      <mesh position={[0, 0.14, 0]} castShadow>
+        <boxGeometry args={[0.3, 0.34, 0.2]} />
+        <meshStandardMaterial color="#7b7566" roughness={0.8} metalness={0.25} />
       </mesh>
+      <mesh position={[0, -0.03, 0]} castShadow>
+        <boxGeometry args={[0.24, 0.12, 0.16]} />
+        <meshStandardMaterial color="#6a6457" roughness={0.88} metalness={0.15} />
+      </mesh>
+
+      {/* Shoulders */}
+      <mesh position={[0.2, 0.18, 0]} castShadow>
+        <sphereGeometry args={[0.07, 12, 10]} />
+        <meshStandardMaterial color="#8d8777" roughness={0.76} metalness={0.26} />
+      </mesh>
+      <mesh position={[-0.2, 0.18, 0]} castShadow>
+        <sphereGeometry args={[0.07, 12, 10]} />
+        <meshStandardMaterial color="#8d8777" roughness={0.76} metalness={0.26} />
+      </mesh>
+
+      {/* Shield (left arm) */}
+      <mesh position={[-0.28, 0.1, 0]} rotation={[0, Math.PI / 2, 0]} castShadow>
+        <cylinderGeometry args={[0.14, 0.14, 0.04, 16]} />
+        <meshStandardMaterial color={player.blocking ? '#c9a45a' : '#4f4338'} roughness={0.9} metalness={0.1} />
+      </mesh>
+
+      {/* Sword (right arm) */}
+      <mesh position={[0.28, 0.06, 0.02]} rotation={[0, 0, -0.22]} castShadow>
+        <boxGeometry args={[0.04, 0.22, 0.03]} />
+        <meshStandardMaterial color="#918b7c" roughness={0.55} metalness={0.5} />
+      </mesh>
+      <mesh position={[0.28, -0.08, 0.02]} rotation={[0, 0, -0.22]} castShadow>
+        <boxGeometry args={[0.02, 0.28, 0.02]} />
+        <meshStandardMaterial color="#a9a291" roughness={0.45} metalness={0.58} />
+      </mesh>
+
+      {/* Cloak accent */}
+      <mesh position={[0, 0.08, -0.12]} castShadow>
+        <boxGeometry args={[0.2, 0.26, 0.04]} />
+        <meshStandardMaterial color="#5a2f24" roughness={1} metalness={0} />
+      </mesh>
+
       {player.dodgingT > 0 ? (
         <mesh position={[0, 0.18, 0]}>
           <ringGeometry args={[0.35, 0.48, 16]} />
@@ -256,9 +296,37 @@ function Bullets() {
   return (
     <group>
       {bullets.map((b) => (
-        <mesh key={b.id} position={[b.pos.x, 0.2, b.pos.y]}>
-          <sphereGeometry args={[0.07, 16, 16]} />
-          <meshBasicMaterial color="#e2e8f0" />
+        <group key={b.id} position={[b.pos.x, 0.2, b.pos.y]} rotation={[0, -Math.atan2(b.vel.y, b.vel.x), 0]}>
+          <mesh position={[0, 0, 0.08]}>
+            <cylinderGeometry args={[0.012, 0.012, 0.24, 8]} />
+            <meshStandardMaterial color="#7b5e3f" roughness={0.9} />
+          </mesh>
+          <mesh position={[0, 0, 0.2]} rotation={[Math.PI / 2, 0, 0]}>
+            <coneGeometry args={[0.028, 0.08, 10]} />
+            <meshStandardMaterial color="#8d8b86" roughness={0.55} metalness={0.35} />
+          </mesh>
+          <mesh position={[0, 0.03, -0.03]} rotation={[0, 0, Math.PI / 4]}>
+            <boxGeometry args={[0.012, 0.05, 0.001]} />
+            <meshStandardMaterial color="#d8d2c2" roughness={1} />
+          </mesh>
+          <mesh position={[0, -0.03, -0.03]} rotation={[0, 0, -Math.PI / 4]}>
+            <boxGeometry args={[0.012, 0.05, 0.001]} />
+            <meshStandardMaterial color="#d8d2c2" roughness={1} />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  )
+}
+
+function EnemyProjectiles() {
+  const enemyProjectiles = useGame((s) => s.enemyProjectiles)
+  return (
+    <group>
+      {enemyProjectiles.map((b) => (
+        <mesh key={b.id} position={[b.pos.x, 0.24, b.pos.y]}>
+          <sphereGeometry args={[0.08, 12, 12]} />
+          <meshBasicMaterial color="#c98266" />
         </mesh>
       ))}
     </group>
@@ -273,7 +341,7 @@ function Enemies() {
         <mesh key={e.id} position={[e.pos.x, 0.22, e.pos.y]}>
           <capsuleGeometry args={[0.25, 0.35, 4, 8]} />
           <meshStandardMaterial
-            color={e.hurtT > 0 ? '#c98266' : '#6a7a4d'}
+            color={e.hurtT > 0 ? '#c98266' : e.kind === 'raider' ? '#7c4b3b' : '#6a7a4d'}
             emissive={e.hurtT > 0 ? '#2a0700' : '#000000'}
             roughness={1}
           />
@@ -371,9 +439,11 @@ function WorldStep() {
   const gates = useGame((s) => s.gates)
   const reset = useGame((s) => s.reset)
   const setPlayerPos = useGame((s) => s.setPlayerPos)
+  const setEnemyPos = useGame((s) => s.setEnemyPos)
   const applyEnemyHit = useGame((s) => s.applyEnemyHit)
   const applyPlayerDamage = useGame((s) => s.applyPlayerDamage)
   const consumeBullets = useGame((s) => s.consumeBullets)
+  const consumeEnemyProjectiles = useGame((s) => s.consumeEnemyProjectiles)
   const setNodeCharged = useGame((s) => s.setNodeCharged)
   const setGateOpen = useGame((s) => s.setGateOpen)
   const setObjective = useGame((s) => s.setObjective)
@@ -437,6 +507,11 @@ function WorldStep() {
         0.02, // target distance
         1.0, // maxToi
         true,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        (c: any) => !meta.current.get(c.handle),
       )
 
       if (!hit) {
@@ -480,18 +555,49 @@ function WorldStep() {
       const ray = new rapier.Ray(new rapier.Vector3(prev.x, 0.22, prev.y), new rapier.Vector3(dx / len, 0, dy / len))
       const hit = world.castRay(ray, len, true, undefined, undefined, undefined, undefined, (c: any) => {
         const m = meta.current.get(c.handle)
-        return m?.type === 'enemy'
+        // Bullets should collide with enemies and solid world walls.
+        // World-wall colliders are not registered in meta.
+        return !m || m.type === 'enemy'
       })
 
       if (hit) {
         const m = meta.current.get(hit.collider.handle)
         if (m?.type === 'enemy') {
           applyEnemyHit(m.id, 10)
-          bulletsToConsume.push(b.id)
         }
+        // Delete bullet on enemy OR wall hit.
+        bulletsToConsume.push(b.id)
       }
     }
     consumeBullets(bulletsToConsume)
+
+    // Enemy projectile collisions (player or wall).
+    const enemyProjToConsume: string[] = []
+    for (const ep of state.enemyProjectiles) {
+      const prev = { x: ep.pos.x - ep.vel.x * clampedDt, y: ep.pos.y - ep.vel.y * clampedDt }
+      const dx = ep.pos.x - prev.x
+      const dy = ep.pos.y - prev.y
+      const len = Math.hypot(dx, dy)
+      if (len < 1e-5) continue
+
+      const ray = new rapier.Ray(new rapier.Vector3(prev.x, 0.22, prev.y), new rapier.Vector3(dx / len, 0, dy / len))
+      const wallHit = world.castRay(ray, len, true, undefined, undefined, undefined, undefined, (c: any) => {
+        const m = meta.current.get(c.handle)
+        return !m
+      })
+      if (wallHit) {
+        enemyProjToConsume.push(ep.id)
+        continue
+      }
+
+      const ppos = useGame.getState().player.pos
+      const toPlayer = Math.hypot(ep.pos.x - ppos.x, ep.pos.y - ppos.y)
+      if (toPlayer < 0.65) {
+        applyPlayerDamage(12)
+        enemyProjToConsume.push(ep.id)
+      }
+    }
+    consumeEnemyProjectiles(enemyProjToConsume)
 
     // Enemy contact damage (Rapier intersection).
     const p = state.player
@@ -517,6 +623,68 @@ function WorldStep() {
         applyPlayerDamage(clampedDt * 20 * touchingEnemies)
       }
       // stamina drain remains handled in store via its own regen; we keep blocking effect "feel" by not draining here.
+    }
+
+    // Enemy collision: keep enemies from walking through solid walls.
+    for (const e of useGame.getState().enemies) {
+      const prevEnemy = stateBefore.enemies.find((x) => x.id === e.id)
+      if (!prevEnemy) continue
+
+      let dx = e.pos.x - prevEnemy.pos.x
+      let dz = e.pos.y - prevEnemy.pos.y
+      let ex = prevEnemy.pos.x
+      let ez = prevEnemy.pos.y
+      const enemyRadius = 0.38
+      const quatIdEnemy = new rapier.Quaternion(0, 0, 0, 1)
+
+      for (let pass = 0; pass < 2; pass++) {
+        const len = Math.hypot(dx, dz)
+        if (len < 1e-5) break
+        const dirx = dx / len
+        const dirz = dz / len
+
+        const shape = new rapier.Ball(enemyRadius)
+        const shapePos = new rapier.Vector3(ex, 0.22, ez)
+        const shapeVel = new rapier.Vector3(dirx * len, 0, dirz * len)
+        const hit = world.castShape(
+          shapePos,
+          quatIdEnemy,
+          shapeVel,
+          shape,
+          0.02,
+          1.0,
+          true,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          (c: any) => !meta.current.get(c.handle),
+        )
+
+        if (!hit) {
+          ex += dx
+          ez += dz
+          dx = 0
+          dz = 0
+          break
+        }
+
+        const travel = Math.max(0, hit.time_of_impact * len - 0.02)
+        ex += dirx * travel
+        ez += dirz * travel
+        const rem = len - travel
+        const nx = hit.normal1.x
+        const nz = hit.normal1.z
+        const dot = dirx * nx + dirz * nz
+        const sx = dirx - nx * dot
+        const sz = dirz - nz * dot
+        dx = sx * rem
+        dz = sz * rem
+      }
+
+      if (Math.abs(ex - e.pos.x) + Math.abs(ez - e.pos.y) > 1e-4) {
+        setEnemyPos(e.id, { x: ex, y: ez })
+      }
     }
 
     // Electricity puzzle: charge nodes when within range and zapping.
@@ -576,6 +744,7 @@ export function Game() {
           <Ground />
           <PlayerShip />
           <Bullets />
+          <EnemyProjectiles />
           <Enemies />
           <NPCs />
           <Puzzle />
@@ -624,13 +793,41 @@ function PhysicsBodies() {
         <CuboidCollider args={[0.5, 2, 14.5]} position={[-14.5, 0.2, 0]} />
       </RigidBody>
 
-      {/* Solid props to collide with */}
-      <RigidBody type="fixed" colliders={false} position={[3.5, 0.35, 0.5]}>
-        <CuboidCollider args={[1.2, 0.6, 1.2]} />
+      {/* Inner keep walls */}
+      <RigidBody type="fixed" colliders={false} position={[0, 0, 0]}>
+        <group position={[0, 0.8, 4.8]}>
+          <mesh castShadow receiveShadow>
+            <boxGeometry args={[8.5, 1.6, 0.7]} />
+            <meshStandardMaterial color="#5a4638" roughness={1} />
+          </mesh>
+          <CuboidCollider args={[4.25, 0.8, 0.35]} />
+        </group>
+
+        <group position={[-5.2, 0.8, -1.2]} rotation={[0, Math.PI * 0.5, 0]}>
+          <mesh castShadow receiveShadow>
+            <boxGeometry args={[6.2, 1.6, 0.7]} />
+            <meshStandardMaterial color="#544235" roughness={1} />
+          </mesh>
+          <CuboidCollider args={[3.1, 0.8, 0.35]} />
+        </group>
+
+        <group position={[5.4, 0.8, -3.2]} rotation={[0, Math.PI * 0.5, 0]}>
+          <mesh castShadow receiveShadow>
+            <boxGeometry args={[7.2, 1.6, 0.7]} />
+            <meshStandardMaterial color="#4d3d31" roughness={1} />
+          </mesh>
+          <CuboidCollider args={[3.6, 0.8, 0.35]} />
+        </group>
+
+        <group position={[0.8, 0.8, -7.0]}>
+          <mesh castShadow receiveShadow>
+            <boxGeometry args={[6.2, 1.6, 0.7]} />
+            <meshStandardMaterial color="#5a4638" roughness={1} />
+          </mesh>
+          <CuboidCollider args={[3.1, 0.8, 0.35]} />
+        </group>
       </RigidBody>
-      <RigidBody type="fixed" colliders={false} position={[-2.5, 0.35, -1.5]}>
-        <CuboidCollider args={[0.8, 0.6, 1.6]} />
-      </RigidBody>
+
     </>
   )
 }
