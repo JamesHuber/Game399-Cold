@@ -62,6 +62,7 @@ export type World = {
   message: string | null
   objective: string
   mysteryClue: string | null
+  debugMode: boolean
 }
 
 const uid = () => Math.random().toString(16).slice(2)
@@ -87,6 +88,7 @@ export type GameActions = {
   setGateOpen(gateId: string, open: boolean): void
   setObjective(objective: string): void
   setPlayerPos(pos: Vec2): void
+  toggleDebugMode(): void
 }
 
 const initialWorld = (): World => ({
@@ -151,9 +153,10 @@ const initialWorld = (): World => ({
     { id: 'n3', pos: { x: -2, y: 8 }, charged: false },
   ],
   gates: [{ id: 'gate-1', pos: { x: 0, y: 11 }, open: false }],
-  message: 'WASD move · Mouse aim · Left click crossbow bolt · Right click stormcraft · E interact · Shift dodge · Space guard',
+  message: 'W/S forward/back · A/D turn · Left click crossbow bolt · Right click stormcraft · E interact · Shift dodge · Space guard',
   objective: 'Awaken the northern portcullis by charging all 3 runestones.',
   mysteryClue: null,
+  debugMode: false,
 })
 
 export const useGame = create<World & GameActions>((set, get) => ({
@@ -287,6 +290,10 @@ export const useGame = create<World & GameActions>((set, get) => ({
 
   setPlayerPos(pos) {
     set((s) => ({ player: { ...s.player, pos } }))
+  },
+
+  toggleDebugMode() {
+    set((s) => ({ debugMode: !s.debugMode }))
   },
 
   tick(dt) {

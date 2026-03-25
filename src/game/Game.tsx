@@ -31,18 +31,28 @@ function Controls() {
   const startDodge = useGame((s) => s.startDodge)
   const setBlocking = useGame((s) => s.setBlocking)
 
-  const { camera } = useThree()
   const { rapier, world } = useRapier()
   const meta = useColliderMeta()
 
   useEffect(() => bindInput(window, input), [input])
 
-  useFrame(() => {
-    // movement
-    const x = (isDown(input, 'KeyD') ? 1 : 0) - (isDown(input, 'KeyA') ? 1 : 0)
-    const y = (isDown(input, 'KeyW') ? 1 : 0) - (isDown(input, 'KeyS') ? 1 : 0)
-    const dir = norm2({ x, y })
-    moveInput(dir)
+  useFrame((_, dt) => {
+    // tank controls:
+    // - A/D rotates
+    // - W forward, S backward
+    const turn = (isDown(input, 'KeyD') ? 1 : 0) - (isDown(input, 'KeyA') ? 1 : 0)
+    const throttle = (isDown(input, 'KeyW') ? 1 : 0) - (isDown(input, 'KeyS') ? 1 : 0)
+
+    const state = useGame.getState()
+    const f0 = state.player.facing
+    const yaw = Math.atan2(f0.y, f0.x)
+    const turnSpeed = 3.3 // rad/s
+    const yaw2 = yaw + turn * turnSpeed * Math.min(0.05, dt)
+    const facing = norm2({ x: Math.cos(yaw2), y: Math.sin(yaw2) })
+    setFacing(facing)
+
+    const moveDir = throttle === 0 ? { x: 0, y: 0 } : norm2({ x: facing.x * throttle, y: facing.y * throttle })
+    moveInput(moveDir)
 
     // block
     const blockNow = isDown(input, 'Space')
@@ -55,23 +65,6 @@ function Controls() {
     const dodgeNow = isDown(input, 'ShiftLeft') || isDown(input, 'ShiftRight')
     if (dodgeNow && !dodgeLatch.current) startDodge()
     dodgeLatch.current = dodgeNow
-
-    // aim (mouse position -> world)
-    // Convert screen mouse to NDC then to world point on y=0 plane.
-    const ndc = new THREE.Vector3(
-      (input.mouse.x / window.innerWidth) * 2 - 1,
-      -(input.mouse.y / window.innerHeight) * 2 + 1,
-      0,
-    )
-    ndc.unproject(camera)
-    const origin = camera.position.clone()
-    const dirRay = ndc.sub(origin).normalize()
-    const t = -origin.y / dirRay.y
-    const hit = origin.clone().add(dirRay.multiplyScalar(Math.max(0, t)))
-
-    const p = useGame.getState().player.pos
-    const facing = norm2({ x: hit.x - p.x, y: hit.z - p.y })
-    if (Math.abs(facing.x) + Math.abs(facing.y) > 0) setFacing(facing)
 
     // fire (left click)
     const leftDown = (input.mouse.buttons & 1) === 1
@@ -376,6 +369,7 @@ function PostFX() {
 function WorldStep() {
   const tick = useGame((s) => s.tick)
   const gates = useGame((s) => s.gates)
+  const reset = useGame((s) => s.reset)
   const setPlayerPos = useGame((s) => s.setPlayerPos)
   const applyEnemyHit = useGame((s) => s.applyEnemyHit)
   const applyPlayerDamage = useGame((s) => s.applyPlayerDamage)
@@ -389,6 +383,7 @@ function WorldStep() {
 
   const prevOpen = useRef(false)
   const prevBulletPos = useRef(new Map<string, { x: number; y: number }>())
+  const deathLatch = useRef(false)
 
   useFrame((_, dt) => {
     const clampedDt = Math.min(0.05, dt)
@@ -399,6 +394,17 @@ function WorldStep() {
     tick(clampedDt)
 
     const state = useGame.getState()
+
+    // Auto-restart when player dies.
+    if (state.player.hp <= 0) {
+      if (!deathLatch.current) {
+        deathLatch.current = true
+        reset()
+      }
+      return
+    } else {
+      deathLatch.current = false
+    }
 
     // Player collision: cast a sphere and slide along obstacles.
     // We keep NPC/node/gate colliders as sensors, so only solid colliders block movement.
@@ -552,6 +558,7 @@ function WorldStep() {
 
 export function Game() {
   const meta = useRef<Map<number, ColliderMeta>>(new Map())
+  const debugMode = useGame((s) => s.debugMode)
   return (
     <main className="app">
       <div className="viewport">
@@ -560,7 +567,7 @@ export function Game() {
           <FogAndLights />
           <CameraRig />
           <ColliderMetaContext.Provider value={meta}>
-            <Physics gravity={[0, 0, 0]} timeStep="vary" colliders={false}>
+            <Physics gravity={[0, 0, 0]} timeStep="vary" colliders={false} debug={debugMode}>
               <PhysicsBodies />
               <WorldStep />
               <Controls />
@@ -660,6 +667,8 @@ function HUD() {
   const objective = useGame((s) => s.objective)
   const clue = useGame((s) => s.mysteryClue)
   const reset = useGame((s) => s.reset)
+  const debugMode = useGame((s) => s.debugMode)
+  const toggleDebugMode = useGame((s) => s.toggleDebugMode)
 
   return (
     <div className="hud">
@@ -668,15 +677,25 @@ function HUD() {
           <div className="hud__title">Cold Star: Iron March</div>
           <div className="hud__subtitle">Prototype region: Blackfen Keep</div>
         </div>
-        <button
-          className="hud__btn"
-          onClick={() => {
-            resumeAudio()
-            reset()
-          }}
-        >
-          Reset
-        </button>
+        <div className="hud__actions">
+          <button
+            className="hud__btn"
+            onClick={() => {
+              toggleDebugMode()
+            }}
+          >
+            {debugMode ? 'Exit Debug' : 'Debug Mode'}
+          </button>
+          <button
+            className="hud__btn"
+            onClick={() => {
+              resumeAudio()
+              reset()
+            }}
+          >
+            Reset
+          </button>
+        </div>
       </div>
 
       <div className="hud__bars">

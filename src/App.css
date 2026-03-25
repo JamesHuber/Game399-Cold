@@ -24,6 +24,11 @@
   gap: 10px;
 }
 
+.hud__actions {
+  display: flex;
+  gap: 8px;
+}
+
 .hud__title {
   font-weight: 600;
   font-size: 14px;
