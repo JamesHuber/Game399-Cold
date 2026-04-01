@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Environment, PerspectiveCamera } from '@react-three/drei'
-import { EffectComposer, Noise, Vignette } from '@react-three/postprocessing'
 import { CuboidCollider, Physics, RigidBody, useRapier } from '@react-three/rapier'
 import * as THREE from 'three'
 import { bindInput, createInputState, isDown } from './input'
@@ -491,15 +490,6 @@ function Puzzle() {
   )
 }
 
-function PostFX() {
-  return (
-    <EffectComposer>
-      <Noise opacity={0.08} />
-      <Vignette eskil={false} offset={0.35} darkness={0.65} />
-    </EffectComposer>
-  )
-}
-
 function WorldStep() {
   const tick = useGame((s) => s.tick)
   const gates = useGame((s) => s.gates)
@@ -824,7 +814,6 @@ export function Game() {
           <NPCs />
           <Puzzle />
           <Environment preset="sunset" />
-          <PostFX />
         </Canvas>
       </div>
       <HUD />
@@ -837,6 +826,7 @@ function PhysicsBodies() {
   const npcs = useGame((s) => s.npcs)
   const nodes = useGame((s) => s.nodes)
   const gates = useGame((s) => s.gates)
+  const barriers = useGame((s) => s.barriers)
 
   // Enemies are kinematic and follow store positions.
   return (
@@ -902,6 +892,19 @@ function PhysicsBodies() {
           <CuboidCollider args={[3.1, 0.8, 0.35]} />
         </group>
       </RigidBody>
+
+      {/* South-west maze (see store.buildMazeBarriers) */}
+      {barriers.map((b) => (
+        <RigidBody key={b.id} type="fixed" colliders={false} position={[b.x, 0, b.z]}>
+          <group position={[0, 0.8, 0]}>
+            <mesh castShadow receiveShadow>
+              <boxGeometry args={[b.halfX * 2, 1.6, b.halfZ * 2]} />
+              <meshStandardMaterial color="#3d3028" roughness={1} metalness={0.04} />
+            </mesh>
+            <CuboidCollider args={[b.halfX, 0.8, b.halfZ]} />
+          </group>
+        </RigidBody>
+      ))}
 
     </>
   )

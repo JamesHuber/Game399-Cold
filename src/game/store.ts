@@ -46,6 +46,15 @@ export type Gate = {
   open: boolean
 }
 
+/** Axis-aligned maze wall segment (XZ); matches CuboidCollider in Game.tsx. */
+export type Barrier = {
+  id: string
+  x: number
+  z: number
+  halfX: number
+  halfZ: number
+}
+
 export type Player = {
   pos: Vec2
   vel: Vec2
@@ -68,6 +77,7 @@ export type World = {
   npcs: Npc[]
   nodes: Node[]
   gates: Gate[]
+  barriers: Barrier[]
   message: string | null
   objective: string
   mysteryClue: string | null
@@ -85,6 +95,171 @@ const LOS_WALLS: Rect[] = [
   { minX: 5.4 - 0.35, maxX: 5.4 + 0.35, minY: -3.2 - 3.6, maxY: -3.2 + 3.6 },
   { minX: 0.8 - 3.1, maxX: 0.8 + 3.1, minY: -7.0 - 0.35, maxY: -7.0 + 0.35 },
 ]
+
+function barrierFootprint(b: Barrier): Rect {
+  return { minX: b.x - b.halfX, maxX: b.x + b.halfX, minY: b.z - b.halfZ, maxY: b.z + b.halfZ }
+}
+
+function inflateRect(r: Rect, pad: number): Rect {
+  return { minX: r.minX - pad, maxX: r.maxX + pad, minY: r.minY - pad, maxY: r.maxY + pad }
+}
+
+function rectsOverlap(a: Rect, b: Rect): boolean {
+  return !(a.maxX < b.minX || b.maxX < a.minX || a.maxY < b.minY || b.maxY < a.minY)
+}
+
+function rectArea(r: Rect): number {
+  return Math.max(0, r.maxX - r.minX) * Math.max(0, r.maxY - r.minY)
+}
+
+function rectIntersectionArea(a: Rect, b: Rect): number {
+  const ix = Math.min(a.maxX, b.maxX) - Math.max(a.minX, b.minX)
+  const iy = Math.min(a.maxY, b.maxY) - Math.max(a.minY, b.minY)
+  if (ix <= 0 || iy <= 0) return 0
+  return ix * iy
+}
+
+/** True when overlap is mostly one slab covering the other (duplicate), not a thin corner cross. */
+function isDuplicateBarrierPair(a: Barrier, b: Barrier): boolean {
+  const ra = barrierFootprint(a)
+  const rb = barrierFootprint(b)
+  const inter = rectIntersectionArea(ra, rb)
+  if (inter <= 0) return false
+  const minA = Math.min(rectArea(ra), rectArea(rb))
+  if (minA < 1e-5) return false
+  return inter / minA > 0.45
+}
+
+/** Keep first; drop later segments that are near-duplicates of an already-kept barrier. */
+function dedupeOverlappingBarriers(barriers: Barrier[]): Barrier[] {
+  const kept: Barrier[] = []
+  for (const b of barriers) {
+    let dup = false
+    for (const k of kept) {
+      if (isDuplicateBarrierPair(b, k)) {
+        dup = true
+        break
+      }
+    }
+    if (!dup) kept.push(b)
+  }
+  return kept
+}
+
+function filterBarriersAgainstRects(barriers: Barrier[], blockers: Rect[]): Barrier[] {
+  return barriers.filter((b) => {
+    const fp = barrierFootprint(b)
+    return !blockers.some((r) => rectsOverlap(fp, r))
+  })
+}
+
+/** Perfect maze covering the inner arena (−13…13); gaps on all four sides. */
+function buildMazeBarriers(): Barrier[] {
+  const R = 16
+  const C = 16
+  const cw = 26 / 16
+  const wt = 0.2
+  const ox = -13
+  const oz = -13
+
+  const h: boolean[][] = []
+  const v: boolean[][] = []
+  for (let r = 0; r < R - 1; r++) {
+    h[r] = []
+    for (let c = 0; c < C; c++) h[r][c] = true
+  }
+  for (let r = 0; r < R; r++) {
+    v[r] = []
+    for (let c = 0; c < C - 1; c++) v[r][c] = true
+  }
+
+  const visited: boolean[][] = Array.from({ length: R }, () => Array(C).fill(false))
+  const dirs = [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1],
+  ] as const
+
+  function shuffle<T>(arr: T[]) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[arr[i], arr[j]] = [arr[j], arr[i]]
+    }
+  }
+
+  function dfs(r: number, c: number) {
+    visited[r][c] = true
+    const order = [...dirs]
+    shuffle(order)
+    for (const [dr, dc] of order) {
+      const nr = r + dr
+      const nc = c + dc
+      if (nr < 0 || nr >= R || nc < 0 || nc >= C) continue
+      if (visited[nr][nc]) continue
+      if (dr === 1) h[r][c] = false
+      else if (dr === -1) h[r - 1][c] = false
+      else if (dc === 1) v[r][c] = false
+      else if (dc === -1) v[r][c - 1] = false
+      dfs(nr, nc)
+    }
+  }
+  dfs(0, 0)
+
+  const midC = Math.floor(C / 2)
+  const midR = Math.floor(R / 2)
+  const southBorder = Array<boolean>(C).fill(true)
+  const northBorder = Array<boolean>(C).fill(true)
+  const westBorder = Array<boolean>(R).fill(true)
+  const eastBorder = Array<boolean>(R).fill(true)
+  southBorder[midC] = false
+  northBorder[midC] = false
+  westBorder[midR] = false
+  eastBorder[midR] = false
+
+  const out: Barrier[] = []
+  const add = (x: number, z: number, halfX: number, halfZ: number) => {
+    out.push({ id: 'maze-' + uid(), x, z, halfX, halfZ })
+  }
+
+  for (let r = 0; r < R - 1; r++) {
+    for (let c = 0; c < C; c++) {
+      if (h[r][c]) add(ox + (c + 0.5) * cw, oz + (r + 1) * cw, cw * 0.5, wt)
+    }
+  }
+  for (let r = 0; r < R; r++) {
+    for (let c = 0; c < C - 1; c++) {
+      if (v[r][c]) add(ox + (c + 1) * cw, oz + (r + 0.5) * cw, wt, cw * 0.5)
+    }
+  }
+  for (let c = 0; c < C; c++) {
+    if (southBorder[c]) add(ox + (c + 0.5) * cw, oz - wt, cw * 0.5, wt)
+    if (northBorder[c]) add(ox + (c + 0.5) * cw, oz + R * cw + wt, cw * 0.5, wt)
+  }
+  for (let r = 0; r < R; r++) {
+    if (westBorder[r]) add(ox - wt, oz + (r + 0.5) * cw, wt, cw * 0.5)
+    if (eastBorder[r]) add(ox + C * cw + wt, oz + (r + 0.5) * cw, wt, cw * 0.5)
+  }
+
+  const staticBlock = LOS_WALLS.map((r) => inflateRect(r, 0.12))
+  const clearZones: Rect[] = [
+    inflateRect({ minX: -2.6, maxX: 2.6, minY: -2.6, maxY: 2.6 }, 0),
+    inflateRect({ minX: 2 - 1.1, maxX: 2 + 1.1, minY: -5 - 1.1, maxY: -5 + 1.1 }, 0),
+    inflateRect({ minX: -6 - 1.1, maxX: -6 + 1.1, minY: 4 - 1.1, maxY: 4 + 1.1 }, 0),
+    inflateRect({ minX: -1.2, maxX: 1.2, minY: 6 - 1.2, maxY: 6 + 1.2 }, 0),
+    inflateRect({ minX: 2 - 1.2, maxX: 2 + 1.2, minY: 8 - 1.2, maxY: 8 + 1.2 }, 0),
+    inflateRect({ minX: -2 - 1.2, maxX: -2 + 1.2, minY: 8 - 1.2, maxY: 8 + 1.2 }, 0),
+    inflateRect({ minX: -1.4, maxX: 1.4, minY: 11 - 1.6, maxY: 11 + 1.6 }, 0),
+    inflateRect({ minX: 5 - 1.5, maxX: 5 + 1.5, minY: 2 - 1.5, maxY: 2 + 1.5 }, 0),
+    inflateRect({ minX: 8 - 1.5, maxX: 8 + 1.5, minY: -4 - 1.5, maxY: -4 + 1.5 }, 0),
+  ]
+
+  let merged = dedupeOverlappingBarriers(out)
+  merged = filterBarriersAgainstRects(merged, staticBlock)
+  merged = filterBarriersAgainstRects(merged, clearZones)
+  merged = dedupeOverlappingBarriers(merged)
+  return merged
+}
 
 function segmentIntersectsRect(ax: number, ay: number, bx: number, by: number, r: Rect): boolean {
   const dx = bx - ax
@@ -112,8 +287,10 @@ function segmentIntersectsRect(ax: number, ay: number, bx: number, by: number, r
   return t0 <= t1
 }
 
-function hasLineOfSight(from: Vec2, to: Vec2) {
-  return !LOS_WALLS.some((w) => segmentIntersectsRect(from.x, from.y, to.x, to.y, w))
+function hasLineOfSight(from: Vec2, to: Vec2, barriers: Barrier[]) {
+  const dynamic = barriers.map(barrierFootprint)
+  const all = [...LOS_WALLS, ...dynamic]
+  return !all.some((w) => segmentIntersectsRect(from.x, from.y, to.x, to.y, w))
 }
 
 export type GameActions = {
@@ -168,7 +345,7 @@ const initialWorld = (): World => ({
     },
     {
       id: 'e-' + uid(),
-      pos: { x: -4, y: -2 },
+      pos: { x: 8, y: -4 },
       vel: { x: 0, y: 0 },
       hp: 30,
       kind: 'raider',
@@ -211,6 +388,7 @@ const initialWorld = (): World => ({
   objective: 'Awaken the northern portcullis by charging all 3 runestones.',
   mysteryClue: null,
   debugMode: false,
+  barriers: buildMazeBarriers(),
 })
 
 export const useGame = create<World & GameActions>((set, get) => ({
@@ -410,7 +588,7 @@ export const useGame = create<World & GameActions>((set, get) => ({
 
         if (e.kind === 'raider') {
           const inSightRange = d < 12
-          const seesPlayer = inSightRange && hasLineOfSight(e.pos, player.pos)
+          const seesPlayer = inSightRange && hasLineOfSight(e.pos, player.pos, s.barriers)
 
           if (seesPlayer && d > 8) {
             const spd = 2.4
