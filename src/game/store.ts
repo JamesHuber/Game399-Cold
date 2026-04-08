@@ -1,6 +1,15 @@
 import { create } from 'zustand'
+import {
+  sfxGateLocked,
+  sfxNodeCharge,
+  sfxRelic,
+  sfxUiSoft,
+} from './audio'
 import type { Vec2 } from './math'
 import { clamp } from './math'
+
+/** Horizontal reach of sword swing (cone extends to this radius; slash uses same value). */
+export const MELEE_ATTACK_RANGE = 2.35 / 2
 
 export type Enemy = {
   id: string
@@ -10,13 +19,6 @@ export type Enemy = {
   kind: 'troll' | 'raider'
   hurtT: number
   shootCooldown: number
-}
-
-export type Bullet = {
-  id: string
-  pos: Vec2
-  vel: Vec2
-  life: number
 }
 
 export type EnemyProjectile = {
@@ -61,7 +63,9 @@ export type Player = {
   facing: Vec2
   hp: number
   stamina: number
-  gunCooldown: number
+  meleeCooldown: number
+  /** Brief window for sword swing animation (seconds). */
+  swordSwingT: number
   zapHeat: number
   interactCooldown: number
   blocking: boolean
@@ -72,7 +76,6 @@ export type World = {
   time: number
   player: Player
   enemies: Enemy[]
-  bullets: Bullet[]
   enemyProjectiles: EnemyProjectile[]
   npcs: Npc[]
   nodes: Node[]
@@ -88,13 +91,8 @@ const uid = () => Math.random().toString(16).slice(2)
 
 type Rect = { minX: number; maxX: number; minY: number; maxY: number }
 
-// Must match the inner wall colliders defined in Game.tsx.
-const LOS_WALLS: Rect[] = [
-  { minX: 0 - 4.25, maxX: 0 + 4.25, minY: 4.8 - 0.35, maxY: 4.8 + 0.35 },
-  { minX: -5.2 - 0.35, maxX: -5.2 + 0.35, minY: -1.2 - 3.1, maxY: -1.2 + 3.1 },
-  { minX: 5.4 - 0.35, maxX: 5.4 + 0.35, minY: -3.2 - 3.6, maxY: -3.2 + 3.6 },
-  { minX: 0.8 - 3.1, maxX: 0.8 + 3.1, minY: -7.0 - 0.35, maxY: -7.0 + 0.35 },
-]
+/** Static LOS rects besides maze barriers (none after removing fixed keep walls). */
+const LOS_WALLS: Rect[] = []
 
 function barrierFootprint(b: Barrier): Rect {
   return { minX: b.x - b.halfX, maxX: b.x + b.halfX, minY: b.z - b.halfZ, maxY: b.z + b.halfZ }
@@ -108,10 +106,6 @@ function rectsOverlap(a: Rect, b: Rect): boolean {
   return !(a.maxX < b.minX || b.maxX < a.minX || a.maxY < b.minY || b.maxY < a.minY)
 }
 
-function rectArea(r: Rect): number {
-  return Math.max(0, r.maxX - r.minX) * Math.max(0, r.maxY - r.minY)
-}
-
 function rectIntersectionArea(a: Rect, b: Rect): number {
   const ix = Math.min(a.maxX, b.maxX) - Math.max(a.minX, b.minX)
   const iy = Math.min(a.maxY, b.maxY) - Math.max(a.minY, b.minY)
@@ -119,29 +113,19 @@ function rectIntersectionArea(a: Rect, b: Rect): number {
   return ix * iy
 }
 
-/** True when overlap is mostly one slab covering the other (duplicate), not a thin corner cross. */
-function isDuplicateBarrierPair(a: Barrier, b: Barrier): boolean {
-  const ra = barrierFootprint(a)
-  const rb = barrierFootprint(b)
-  const inter = rectIntersectionArea(ra, rb)
-  if (inter <= 0) return false
-  const minA = Math.min(rectArea(ra), rectArea(rb))
-  if (minA < 1e-5) return false
-  return inter / minA > 0.45
-}
-
-/** Keep first; drop later segments that are near-duplicates of an already-kept barrier. */
+/** Keep first; drop any later barrier whose footprint intersects an already-kept one (volume overlap). */
 function dedupeOverlappingBarriers(barriers: Barrier[]): Barrier[] {
   const kept: Barrier[] = []
   for (const b of barriers) {
-    let dup = false
+    const fp = barrierFootprint(b)
+    let overlap = false
     for (const k of kept) {
-      if (isDuplicateBarrierPair(b, k)) {
-        dup = true
+      if (rectIntersectionArea(fp, barrierFootprint(k)) > 1e-8) {
+        overlap = true
         break
       }
     }
-    if (!dup) kept.push(b)
+    if (!overlap) kept.push(b)
   }
   return kept
 }
@@ -153,14 +137,102 @@ function filterBarriersAgainstRects(barriers: Barrier[], blockers: Rect[]): Barr
   })
 }
 
-/** Perfect maze covering the inner arena (−13…13); gaps on all four sides. */
+function mergeBarrierAABBs(a: Barrier, b: Barrier): Barrier {
+  const aL = a.x - a.halfX
+  const aR = a.x + a.halfX
+  const bL = b.x - b.halfX
+  const bR = b.x + b.halfX
+  const aB = a.z - a.halfZ
+  const aT = a.z + a.halfZ
+  const bB = b.z - b.halfZ
+  const bT = b.z + b.halfZ
+  const L = Math.min(aL, bL)
+  const R = Math.max(aR, bR)
+  const B = Math.min(aB, bB)
+  const T = Math.max(aT, bT)
+  return {
+    id: 'maze-' + uid(),
+    x: (L + R) * 0.5,
+    z: (B + T) * 0.5,
+    halfX: (R - L) * 0.5,
+    halfZ: (T - B) * 0.5,
+  }
+}
+
+/**
+ * Combine collinear adjacent slabs whose gap along the wall is ≤ `maxGap` (or slightly overlapping).
+ * `maxGap` should be at least the natural gap between corner-cut slabs (~2*wt) so same-row segments merge.
+ * Produces fewer, longer barriers (one physics body each in Game.tsx).
+ */
+function mergeCollinearBarrierEnds(barriers: Barrier[], maxGap: number): Barrier[] {
+  const isHoriz = (b: Barrier) => b.halfX >= b.halfZ
+  const horiz = barriers.filter(isHoriz)
+  const vert = barriers.filter((b) => !isHoriz(b))
+
+  const mergeLine = (list: Barrier[], horizontal: boolean): Barrier[] => {
+    if (list.length === 0) return []
+    const sorted = [...list].sort((a, b) => {
+      if (horizontal) {
+        const dz = a.z - b.z
+        if (Math.abs(dz) > 1e-5) return dz
+        return a.x - a.halfX - (b.x - b.halfX)
+      }
+      const dx = a.x - b.x
+      if (Math.abs(dx) > 1e-5) return dx
+      return a.z - a.halfZ - (b.z - b.halfZ)
+    })
+    const out: Barrier[] = []
+    let cur = sorted[0]
+    for (let i = 1; i < sorted.length; i++) {
+      const next = sorted[i]
+      let merge = false
+      if (horizontal) {
+        const sameRow =
+          Math.abs(cur.z - next.z) < 1e-4 &&
+          Math.abs(cur.halfZ - next.halfZ) < 1e-5 &&
+          cur.halfX >= cur.halfZ &&
+          next.halfX >= next.halfZ
+        const gap = next.x - next.halfX - (cur.x + cur.halfX)
+        merge = sameRow && gap <= maxGap && gap >= -1e-4
+      } else {
+        const sameCol =
+          Math.abs(cur.x - next.x) < 1e-4 &&
+          Math.abs(cur.halfX - next.halfX) < 1e-5 &&
+          cur.halfZ > cur.halfX &&
+          next.halfZ > next.halfX
+        const gap = next.z - next.halfZ - (cur.z + cur.halfZ)
+        merge = sameCol && gap <= maxGap && gap >= -1e-4
+      }
+      if (merge) cur = mergeBarrierAABBs(cur, next)
+      else {
+        out.push(cur)
+        cur = next
+      }
+    }
+    out.push(cur)
+    return out
+  }
+
+  return [...mergeLine(horiz, true), ...mergeLine(vert, false)]
+}
+
+/**
+ * Perfect maze on a 1×1 cell grid (−13…13). Walls are thin slabs on grid lines so cell interiors stay walkable.
+ * Slabs are shortened by `wt` at corners so H/V segments meet without overlapping; any remaining overlap is removed by dedupe.
+ */
 function buildMazeBarriers(): Barrier[] {
-  const R = 16
-  const C = 16
-  const cw = 26 / 16
-  const wt = 0.2
+  const cw = 1
+  const R = 26
+  const C = 26
   const ox = -13
   const oz = -13
+  /**
+   * Half-thickness of each wall slab. Inner-face clearance across a 1-unit cell with two parallel walls = 1 - 2*wt.
+   * Player collision is Ball(radius 0.45) → needs ≥0.9 m; wt=0.06 gave 0.88 m (too tight).
+   */
+  const wt = 0.019
+  /** Run length along an edge between corner cuts (fits inside the 1×1 cell grid). */
+  const halfAlong = 0.5 - wt
 
   const h: boolean[][] = []
   const v: boolean[][] = []
@@ -218,27 +290,30 @@ function buildMazeBarriers(): Barrier[] {
   eastBorder[midR] = false
 
   const out: Barrier[] = []
-  const add = (x: number, z: number, halfX: number, halfZ: number) => {
-    out.push({ id: 'maze-' + uid(), x, z, halfX, halfZ })
+  const pushH = (x: number, z: number) => {
+    out.push({ id: 'maze-' + uid(), x, z, halfX: halfAlong, halfZ: wt })
+  }
+  const pushV = (x: number, z: number) => {
+    out.push({ id: 'maze-' + uid(), x, z, halfX: wt, halfZ: halfAlong })
   }
 
   for (let r = 0; r < R - 1; r++) {
     for (let c = 0; c < C; c++) {
-      if (h[r][c]) add(ox + (c + 0.5) * cw, oz + (r + 1) * cw, cw * 0.5, wt)
+      if (h[r][c]) pushH(ox + (c + 0.5) * cw, oz + (r + 1) * cw)
     }
   }
   for (let r = 0; r < R; r++) {
     for (let c = 0; c < C - 1; c++) {
-      if (v[r][c]) add(ox + (c + 1) * cw, oz + (r + 0.5) * cw, wt, cw * 0.5)
+      if (v[r][c]) pushV(ox + (c + 1) * cw, oz + (r + 0.5) * cw)
     }
   }
   for (let c = 0; c < C; c++) {
-    if (southBorder[c]) add(ox + (c + 0.5) * cw, oz - wt, cw * 0.5, wt)
-    if (northBorder[c]) add(ox + (c + 0.5) * cw, oz + R * cw + wt, cw * 0.5, wt)
+    if (southBorder[c]) pushH(ox + (c + 0.5) * cw, oz - 0.5 * cw)
+    if (northBorder[c]) pushH(ox + (c + 0.5) * cw, oz + R * cw + 0.5 * cw)
   }
   for (let r = 0; r < R; r++) {
-    if (westBorder[r]) add(ox - wt, oz + (r + 0.5) * cw, wt, cw * 0.5)
-    if (eastBorder[r]) add(ox + C * cw + wt, oz + (r + 0.5) * cw, wt, cw * 0.5)
+    if (westBorder[r]) pushV(ox - 0.5 * cw, oz + (r + 0.5) * cw)
+    if (eastBorder[r]) pushV(ox + C * cw + 0.5 * cw, oz + (r + 0.5) * cw)
   }
 
   const staticBlock = LOS_WALLS.map((r) => inflateRect(r, 0.12))
@@ -258,6 +333,8 @@ function buildMazeBarriers(): Barrier[] {
   merged = filterBarriersAgainstRects(merged, staticBlock)
   merged = filterBarriersAgainstRects(merged, clearZones)
   merged = dedupeOverlappingBarriers(merged)
+  // Merge endpoints within 0.01, and adjacent grid slabs (gap ≈ 2*wt from corner cuts).
+  merged = mergeCollinearBarrierEnds(merged, Math.max(0.01, 2 * wt + 0.002))
   return merged
 }
 
@@ -297,19 +374,20 @@ export type GameActions = {
   reset(): void
   tick(dt: number): void
   setMessage(msg: string | null): void
-  fireBullet(): void
+  /** `null` = on cooldown; `true` / `false` = swung and hit an enemy or not. */
+  swordAttack(): boolean | null
   zap(): void
   interactCooldown(): void
   interactNpc(npcId: string): void
   interactGate(gateId: string): void
   interactNothing(): void
   setBlocking(v: boolean): void
-  startDodge(): void
+  /** `true` if dodge actually started. */
+  startDodge(): boolean
   moveInput(dir: Vec2): void
   setFacing(dir: Vec2): void
   applyEnemyHit(enemyId: string, damage: number): void
   applyPlayerDamage(damage: number): void
-  consumeBullets(bulletIds: string[]): void
   consumeEnemyProjectiles(projectileIds: string[]): void
   setNodeCharged(nodeId: string, charged: boolean): void
   setGateOpen(gateId: string, open: boolean): void
@@ -327,7 +405,8 @@ const initialWorld = (): World => ({
     facing: { x: 1, y: 0 },
     hp: 100,
     stamina: 100,
-    gunCooldown: 0,
+    meleeCooldown: 0,
+    swordSwingT: 0,
     zapHeat: 0,
     interactCooldown: 0,
     blocking: false,
@@ -353,7 +432,6 @@ const initialWorld = (): World => ({
       shootCooldown: 0.9,
     },
   ],
-  bullets: [],
   enemyProjectiles: [],
   npcs: [
     {
@@ -384,7 +462,7 @@ const initialWorld = (): World => ({
     { id: 'n3', pos: { x: -2, y: 8 }, charged: false },
   ],
   gates: [{ id: 'gate-1', pos: { x: 0, y: 11 }, open: false }],
-  message: 'W/S forward/back · A/D turn · Left click crossbow bolt · Right click stormcraft · E interact · Shift dodge · Space guard',
+  message: 'W/S forward/back · A/D turn · Left click sword · Right click stormcraft · E interact · Shift dodge · Space guard',
   objective: 'Awaken the northern portcullis by charging all 3 runestones.',
   mysteryClue: null,
   debugMode: false,
@@ -422,39 +500,53 @@ export const useGame = create<World & GameActions>((set, get) => ({
   },
 
   startDodge() {
-    set((s) => {
-      if (s.player.stamina < 20 || s.player.dodgingT > 0) return s
-      return {
-        player: {
-          ...s.player,
-          stamina: s.player.stamina - 20,
-          dodgingT: 0.22,
-        },
-      }
+    const s = get()
+    if (s.player.stamina < 20 || s.player.dodgingT > 0) return false
+    set({
+      player: {
+        ...s.player,
+        stamina: s.player.stamina - 20,
+        dodgingT: 0.22,
+      },
     })
+    return true
   },
 
-  fireBullet() {
+  swordAttack() {
     const s = get()
-    if (s.player.gunCooldown > 0) return
+    if (s.player.meleeCooldown > 0 || s.player.blocking) return null
+    const p = s.player.pos
     const f = s.player.facing
-    const speed = 18
-    const muzzleOffset = 0.38
-    set((prev) => ({
-      bullets: [
-        ...prev.bullets,
-        {
-          id: 'b-' + uid(),
-          pos: {
-            x: prev.player.pos.x + f.x * muzzleOffset,
-            y: prev.player.pos.y + f.y * muzzleOffset,
-          },
-          vel: { x: f.x * speed, y: f.y * speed },
-          life: 1.0,
+    const br = s.barriers
+    const range = MELEE_ATTACK_RANGE
+    const cosHalf = Math.cos((52 * Math.PI) / 180)
+    const hit = new Set<string>()
+    for (const e of s.enemies) {
+      const dx = e.pos.x - p.x
+      const dy = e.pos.y - p.y
+      const d = Math.hypot(dx, dy)
+      if (d > range || d < 1e-5) continue
+      const dirx = dx / d
+      const diry = dy / d
+      if (f.x * dirx + f.y * diry < cosHalf) continue
+      if (!hasLineOfSight(p, e.pos, br)) continue
+      hit.add(e.id)
+    }
+    const hitEnemy = hit.size > 0
+    set((prev) => {
+      const enemies = prev.enemies
+        .map((e) => (hit.has(e.id) ? { ...e, hp: e.hp - 10, hurtT: 0.12 } : e))
+        .filter((e) => e.hp > 0)
+      return {
+        player: {
+          ...prev.player,
+          meleeCooldown: 0.38,
+          swordSwingT: 0.22,
         },
-      ],
-      player: { ...prev.player, gunCooldown: 0.12 },
-    }))
+        enemies,
+      }
+    })
+    return hitEnemy
   },
 
   zap() {
@@ -476,6 +568,7 @@ export const useGame = create<World & GameActions>((set, get) => ({
         n.id === npcId ? { ...n, lineIdx: (n.lineIdx + 1) % n.lines.length } : n,
       )
       const active = npcs.find((n) => n.id === npcId)
+      if (active) sfxUiSoft()
       return active ? { npcs, message: `${active.name}: ${active.lines[active.lineIdx]}` } : prev
     })
   },
@@ -483,14 +576,17 @@ export const useGame = create<World & GameActions>((set, get) => ({
   interactGate(gateId) {
     const g = get().gates.find((x) => x.id === gateId)
     if (!g?.open) {
+      sfxGateLocked()
       set({ message: 'The portcullis is sealed. The runestones still sleep.' })
       return
     }
+    sfxRelic()
     set({ mysteryClue: 'An iron reliquary hums in your gauntlet. Its sigil points east.' })
     set({ message: 'You recovered the relic. (Prototype end - next region coming.)' })
   },
 
   interactNothing() {
+    sfxUiSoft()
     set({ message: 'Nothing to interact with.' })
   },
 
@@ -506,12 +602,6 @@ export const useGame = create<World & GameActions>((set, get) => ({
     set((s) => ({ player: { ...s.player, hp: Math.max(0, s.player.hp - damage) } }))
   },
 
-  consumeBullets(bulletIds) {
-    if (bulletIds.length === 0) return
-    const kill = new Set(bulletIds)
-    set((s) => ({ bullets: s.bullets.filter((b) => !kill.has(b.id)) }))
-  },
-
   consumeEnemyProjectiles(projectileIds) {
     if (projectileIds.length === 0) return
     const kill = new Set(projectileIds)
@@ -519,7 +609,11 @@ export const useGame = create<World & GameActions>((set, get) => ({
   },
 
   setNodeCharged(nodeId, charged) {
-    set((s) => ({ nodes: s.nodes.map((n) => (n.id === nodeId ? { ...n, charged } : n)) }))
+    set((s) => {
+      const before = s.nodes.find((n) => n.id === nodeId)
+      if (charged && before && !before.charged) sfxNodeCharge()
+      return { nodes: s.nodes.map((n) => (n.id === nodeId ? { ...n, charged } : n)) }
+    })
   },
 
   setGateOpen(gateId, open) {
@@ -550,7 +644,8 @@ export const useGame = create<World & GameActions>((set, get) => ({
       const player = { ...s.player }
 
       // Cooldowns / resources
-      player.gunCooldown = Math.max(0, player.gunCooldown - dt)
+      player.meleeCooldown = Math.max(0, player.meleeCooldown - dt)
+      player.swordSwingT = Math.max(0, player.swordSwingT - dt)
       player.zapHeat = Math.max(0, player.zapHeat - dt * 0.35)
       player.interactCooldown = Math.max(0, player.interactCooldown - dt)
       player.dodgingT = Math.max(0, player.dodgingT - dt)
@@ -566,15 +661,6 @@ export const useGame = create<World & GameActions>((set, get) => ({
       const bound = 14
       player.pos.x = clamp(player.pos.x, -bound, bound)
       player.pos.y = clamp(player.pos.y, -bound, bound)
-
-      // Bullets
-      const bullets = s.bullets
-        .map((b) => ({
-          ...b,
-          life: b.life - dt,
-          pos: { x: b.pos.x + b.vel.x * dt, y: b.pos.y + b.vel.y * dt },
-        }))
-        .filter((b) => b.life > 0)
 
       // Enemies
       const spawnedEnemyProjectiles: EnemyProjectile[] = []
@@ -644,7 +730,6 @@ export const useGame = create<World & GameActions>((set, get) => ({
       return {
         time: t,
         player,
-        bullets,
         enemyProjectiles,
         enemies,
       }
