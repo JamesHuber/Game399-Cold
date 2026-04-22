@@ -1,0 +1,1372 @@
+[gd_scene format=3 uid="uid://cq3yy4ooq4rrj"]
+
+[ext_resource type="Script" uid="uid://nh4jqi8mmnmu" path="res://scripts/MainController.gd" id="1"]
+[ext_resource type="Script" uid="uid://scfo71fpwiak" path="res://scripts/CameraFollow.gd" id="2"]
+[ext_resource type="Script" uid="uid://by21pceauk6aw" path="res://scripts/PlayerController.gd" id="3"]
+[ext_resource type="Script" uid="uid://l0xmhmkiec02" path="res://scripts/EnemyAI.gd" id="4"]
+[ext_resource type="Script" uid="uid://1q4rdy0m0162" path="res://scripts/Runestone.gd" id="5"]
+[ext_resource type="Script" uid="uid://cuekwm2a4xtys" path="res://scripts/Gate.gd" id="6"]
+[ext_resource type="Script" uid="uid://cn4m88bexeb08" path="res://scripts/Npc.gd" id="7"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_player"]
+size = Vector3(0.6, 1.6, 0.6)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_player_steel"]
+albedo_color = Color(0.72, 0.75, 0.8, 1)
+metallic = 0.88
+roughness = 0.28
+
+[sub_resource type="BoxMesh" id="BoxMesh_player_chest"]
+size = Vector3(0.46, 0.62, 0.28)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_player_trim"]
+albedo_color = Color(0.42, 0.39, 0.34, 1)
+metallic = 0.45
+roughness = 0.62
+
+[sub_resource type="BoxMesh" id="BoxMesh_player_waist"]
+size = Vector3(0.34, 0.18, 0.24)
+
+[sub_resource type="SphereMesh" id="SphereMesh_player_helmet"]
+radius = 0.22
+height = 0.44
+
+[sub_resource type="BoxMesh" id="BoxMesh_player_visor"]
+size = Vector3(0.24, 0.12, 0.2)
+
+[sub_resource type="BoxMesh" id="BoxMesh_player_helmcrest"]
+size = Vector3(0.1, 0.24, 0.1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_player_pauldron"]
+size = Vector3(0.22, 0.12, 0.22)
+
+[sub_resource type="BoxMesh" id="BoxMesh_player_limb"]
+size = Vector3(0.12, 0.42, 0.12)
+
+[sub_resource type="BoxMesh" id="BoxMesh_player_sword"]
+size = Vector3(0.06, 0.72, 0.08)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_shield"]
+albedo_color = Color(0.419608, 0.290196, 0.184314, 1)
+metallic = 0.05
+roughness = 0.95
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_shield"]
+top_radius = 0.16
+bottom_radius = 0.16
+height = 0.05
+radial_segments = 20
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_slash"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 1, 1, 0.55)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ground"]
+size = Vector3(40, 1, 40)
+
+[sub_resource type="BoxMesh" id="BoxMesh_ground"]
+size = Vector3(40, 1, 40)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall"]
+size = Vector3(40, 3, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_edge_barrier_ns"]
+size = Vector3(40, 1.2, 1.2)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_edge_barrier"]
+albedo_color = Color(0.16, 0.16, 0.18, 1)
+metallic = 0.18
+roughness = 0.88
+
+[sub_resource type="BoxMesh" id="BoxMesh_edge_barrier_ns"]
+size = Vector3(40, 1.2, 1.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_edge_barrier_ew"]
+size = Vector3(1.2, 1.2, 40)
+
+[sub_resource type="BoxMesh" id="BoxMesh_edge_barrier_ew"]
+size = Vector3(1.2, 1.2, 40)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_barrier"]
+size = Vector3(2.4, 2.4, 0.8)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_barrier"]
+albedo_color = Color(0.19, 0.17, 0.14, 1)
+metallic = 0.03
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="BoxMesh_barrier"]
+size = Vector3(2.4, 2.4, 0.8)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_barrier_long"]
+size = Vector3(4.8, 2.8, 0.9)
+
+[sub_resource type="BoxMesh" id="BoxMesh_barrier_long"]
+size = Vector3(4.8, 2.8, 0.9)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_barrier_pillar"]
+size = Vector3(1.1, 4, 1.1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_barrier_pillar"]
+size = Vector3(1.1, 4, 1.1)
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_enemy"]
+radius = 0.32
+height = 1.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_goblin_skin"]
+albedo_color = Color(0.28, 0.62, 0.24, 1)
+metallic = 0.05
+roughness = 0.86
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_enemy"]
+radius = 0.3
+height = 0.8
+
+[sub_resource type="SphereMesh" id="SphereMesh_goblin_head"]
+radius = 0.2
+height = 0.4
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_goblin_blade"]
+albedo_color = Color(0.55, 0.57, 0.52, 1)
+metallic = 0.72
+roughness = 0.34
+
+[sub_resource type="BoxMesh" id="BoxMesh_goblin_dagger"]
+size = Vector3(0.06, 0.42, 0.08)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wizard_robe"]
+albedo_color = Color(0.23, 0.21, 0.44, 1)
+metallic = 0.08
+roughness = 0.78
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wizard_skin"]
+albedo_color = Color(0.74, 0.66, 0.57, 1)
+roughness = 0.92
+
+[sub_resource type="SphereMesh" id="SphereMesh_wizard_head"]
+radius = 0.17
+height = 0.34
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_wizard_hat"]
+top_radius = 0.05
+bottom_radius = 0.17
+height = 0.34
+radial_segments = 12
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wizard_staff"]
+albedo_color = Color(0.33, 0.24, 0.16, 1)
+metallic = 0.05
+roughness = 0.95
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_wizard_staff"]
+top_radius = 0.03
+bottom_radius = 0.03
+height = 0.86
+radial_segments = 10
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_runestone"]
+radius = 0.36
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_runestone"]
+transparency = 1
+albedo_color = Color(0.42, 0.9, 1, 0.82)
+metallic = 0.05
+roughness = 0.12
+emission_enabled = true
+emission = Color(0.24, 0.85, 1, 1)
+emission_energy_multiplier = 1.1
+refraction_enabled = true
+refraction_scale = 0.06
+
+[sub_resource type="CylinderMesh" id="SphereMesh_runestone"]
+top_radius = 0.06
+bottom_radius = 0.24
+height = 1.35
+radial_segments = 6
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_gate"]
+size = Vector3(2.2, 1.2, 0.35)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gate"]
+albedo_color = Color(0.16, 0.12, 0.2, 1)
+metallic = 0.18
+roughness = 0.38
+emission_enabled = true
+emission = Color(0.18, 0.1, 0.34, 1)
+emission_energy_multiplier = 0.7
+
+[sub_resource type="BoxMesh" id="BoxMesh_gate"]
+size = Vector3(2.2, 1.2, 0.35)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gate_field"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(0.28, 0.7, 1, 0.45)
+
+[sub_resource type="BoxMesh" id="BoxMesh_gate_field"]
+size = Vector3(2, 1, 0.08)
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_npc"]
+radius = 0.3
+height = 0.6
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_npc"]
+albedo_color = Color(0.49, 0.42, 0.34, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_npc"]
+top_radius = 0.25
+bottom_radius = 0.25
+height = 0.55
+
+[node name="Main" type="Node3D" unique_id=619314939]
+script = ExtResource("1")
+
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=1151226262]
+transform = Transform3D(0.8253356, -0.4050497, 0.3933902, 0, 0.6967067, 0.7173561, -0.5646425, -0.59205955, 0.57501686, 0, 0, 0)
+light_energy = 1.2
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=52087443]
+
+[node name="Player" type="CharacterBody3D" parent="." unique_id=970503579]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+collision_layer = 2
+script = ExtResource("3")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player" unique_id=613432493]
+shape = SubResource("BoxShape3D_player")
+
+[node name="BodyMesh" type="MeshInstance3D" parent="Player" unique_id=268924519]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.03, 0)
+material_override = SubResource("StandardMaterial3D_player_steel")
+mesh = SubResource("BoxMesh_player_chest")
+
+[node name="WaistMesh" type="MeshInstance3D" parent="Player" unique_id=1415125453]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.42, 0)
+material_override = SubResource("StandardMaterial3D_player_trim")
+mesh = SubResource("BoxMesh_player_waist")
+
+[node name="HelmetMesh" type="MeshInstance3D" parent="Player" unique_id=557357759]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+material_override = SubResource("StandardMaterial3D_player_steel")
+mesh = SubResource("SphereMesh_player_helmet")
+
+[node name="VisorMesh" type="MeshInstance3D" parent="Player" unique_id=345534057]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.49, -0.14)
+material_override = SubResource("StandardMaterial3D_player_trim")
+mesh = SubResource("BoxMesh_player_visor")
+
+[node name="HelmCrest" type="MeshInstance3D" parent="Player" unique_id=1244150747]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.68, 0.02)
+material_override = SubResource("StandardMaterial3D_player_trim")
+mesh = SubResource("BoxMesh_player_helmcrest")
+
+[node name="LeftPauldron" type="MeshInstance3D" parent="Player" unique_id=2132596861]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.24, 0.27, 0)
+material_override = SubResource("StandardMaterial3D_player_steel")
+mesh = SubResource("BoxMesh_player_pauldron")
+
+[node name="RightPauldron" type="MeshInstance3D" parent="Player" unique_id=1559876339]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.24, 0.27, 0)
+material_override = SubResource("StandardMaterial3D_player_steel")
+mesh = SubResource("BoxMesh_player_pauldron")
+
+[node name="LeftArm" type="MeshInstance3D" parent="Player" unique_id=1639054320]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.29, -0.02, 0)
+material_override = SubResource("StandardMaterial3D_player_trim")
+mesh = SubResource("BoxMesh_player_limb")
+
+[node name="RightArm" type="MeshInstance3D" parent="Player" unique_id=2117660391]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.29, -0.02, 0)
+material_override = SubResource("StandardMaterial3D_player_trim")
+mesh = SubResource("BoxMesh_player_limb")
+
+[node name="LeftLeg" type="MeshInstance3D" parent="Player" unique_id=1513068440]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.11, -0.72, 0)
+material_override = SubResource("StandardMaterial3D_player_steel")
+mesh = SubResource("BoxMesh_player_limb")
+
+[node name="RightLeg" type="MeshInstance3D" parent="Player" unique_id=619081686]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.11, -0.72, 0)
+material_override = SubResource("StandardMaterial3D_player_steel")
+mesh = SubResource("BoxMesh_player_limb")
+
+[node name="SwordMesh" type="MeshInstance3D" parent="Player" unique_id=926536248]
+transform = Transform3D(0.97589743, 0.21822962, 0, -0.21822962, 0.97589743, 0, 0, 0, 1, 0.38, -0.02, -0.08)
+material_override = SubResource("StandardMaterial3D_player_trim")
+mesh = SubResource("BoxMesh_player_sword")
+
+[node name="ShieldMesh" type="MeshInstance3D" parent="Player" unique_id=472897707]
+transform = Transform3D(-3.6199901e-06, -1, 0, 1, -3.6199901e-06, 0, 0, 0, 1, -0.5, 0.1, 0)
+material_override = SubResource("StandardMaterial3D_shield")
+mesh = SubResource("CylinderMesh_shield")
+
+[node name="SlashMesh" type="MeshInstance3D" parent="Player" unique_id=894908136]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.42, 0)
+material_override = SubResource("StandardMaterial3D_slash")
+
+[node name="CameraRig" type="Node3D" parent="." unique_id=657062809]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.8, 6.5)
+script = ExtResource("2")
+target_path = NodePath("../Player")
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig" unique_id=1022905866]
+current = true
+fov = 55.0
+
+[node name="Ground" type="StaticBody3D" parent="." unique_id=1478474438]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+collision_mask = 0
+
+[node name="GroundCollider" type="CollisionShape3D" parent="Ground" unique_id=2050507638]
+shape = SubResource("BoxShape3D_ground")
+
+[node name="GroundMesh" type="MeshInstance3D" parent="Ground" unique_id=2003904950]
+mesh = SubResource("BoxMesh_ground")
+
+[node name="Walls" type="Node3D" parent="." unique_id=1859911737]
+
+[node name="NorthWall" type="StaticBody3D" parent="Walls" unique_id=256065144]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -20)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/NorthWall" unique_id=111100728]
+shape = SubResource("BoxShape3D_wall")
+
+[node name="SouthWall" type="StaticBody3D" parent="Walls" unique_id=32630341]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 20)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/SouthWall" unique_id=1741490039]
+shape = SubResource("BoxShape3D_wall")
+
+[node name="EastWall" type="StaticBody3D" parent="Walls" unique_id=1135589474]
+transform = Transform3D(-3.6199901e-06, 0, 1, 0, 1, 0, -1, 0, -3.6199901e-06, 20, 1.5, 0)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/EastWall" unique_id=1433926614]
+shape = SubResource("BoxShape3D_wall")
+
+[node name="WestWall" type="StaticBody3D" parent="Walls" unique_id=410593955]
+transform = Transform3D(-3.6199901e-06, 0, 1, 0, 1, 0, -1, 0, -3.6199901e-06, -20, 1.5, 0)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/WestWall" unique_id=71267378]
+shape = SubResource("BoxShape3D_wall")
+
+[node name="EdgeBarriers" type="Node3D" parent="." unique_id=1301866599]
+
+[node name="NorthEdge" type="StaticBody3D" parent="EdgeBarriers" unique_id=569097907]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, -19.4)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="EdgeBarriers/NorthEdge" unique_id=2146158386]
+shape = SubResource("BoxShape3D_edge_barrier_ns")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="EdgeBarriers/NorthEdge" unique_id=1860773400]
+transform = Transform3D(1, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_edge_barrier")
+mesh = SubResource("BoxMesh_edge_barrier_ns")
+
+[node name="SouthEdge" type="StaticBody3D" parent="EdgeBarriers" unique_id=1466484588]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 19.4)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="EdgeBarriers/SouthEdge" unique_id=466828863]
+shape = SubResource("BoxShape3D_edge_barrier_ns")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="EdgeBarriers/SouthEdge" unique_id=114355572]
+transform = Transform3D(1, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_edge_barrier")
+mesh = SubResource("BoxMesh_edge_barrier_ns")
+
+[node name="EastEdge" type="StaticBody3D" parent="EdgeBarriers" unique_id=1006591817]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.4, 0.6, 0)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="EdgeBarriers/EastEdge" unique_id=832174670]
+shape = SubResource("BoxShape3D_edge_barrier_ew")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="EdgeBarriers/EastEdge" unique_id=530151880]
+transform = Transform3D(1, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_edge_barrier")
+mesh = SubResource("BoxMesh_edge_barrier_ew")
+
+[node name="WestEdge" type="StaticBody3D" parent="EdgeBarriers" unique_id=1432341480]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.4, 0.6, 0)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="EdgeBarriers/WestEdge" unique_id=745287519]
+shape = SubResource("BoxShape3D_edge_barrier_ew")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="EdgeBarriers/WestEdge" unique_id=1788338221]
+transform = Transform3D(1, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_edge_barrier")
+mesh = SubResource("BoxMesh_edge_barrier_ew")
+
+[node name="Barriers" type="Node3D" parent="." unique_id=694464225]
+
+[node name="BarrierA" type="StaticBody3D" parent="Barriers" unique_id=1246185952]
+transform = Transform3D(-3.6199901e-06, 0, 1, 0, 1, 0, -1, 0, -3.6199901e-06, 0, 1.2, -13)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierA" unique_id=1365244663]
+shape = SubResource("BoxShape3D_barrier")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierA" unique_id=264946705]
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier")
+
+[node name="BarrierB" type="StaticBody3D" parent="Barriers" unique_id=663458301]
+transform = Transform3D(-3.6199901e-06, 0, 1, 0, 1, 0, -1, 0, -3.6199901e-06, -5.2, 1.2, -8.2)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierB" unique_id=1695183407]
+shape = SubResource("BoxShape3D_barrier")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierB" unique_id=1164642842]
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier")
+
+[node name="BarrierC" type="StaticBody3D" parent="Barriers" unique_id=663769354]
+transform = Transform3D(-3.6199901e-06, 0, 1, 0, 1, 0, -1, 0, -3.6199901e-06, 5.4, 1.2, -8.2)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierC" unique_id=2057957743]
+transform = Transform3D(1.4863676, 0, 0, 0, 1, 0, 0, 0, 1.0000018, -0.0072317123, 0, 8.633842)
+shape = SubResource("BoxShape3D_barrier")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierC" unique_id=1523078510]
+transform = Transform3D(1.4863676, 0, 0, 0, 1, 0, 0, 0, 1.0000018, -3.1471252e-05, 0, 8.633842)
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier")
+
+[node name="BarrierD_Long" type="StaticBody3D" parent="Barriers" unique_id=264303125]
+transform = Transform3D(-3.6199901e-06, 0, 1, 0, 1, 0, -1, 0, -3.6199901e-06, -7.6, 1.4, -3)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierD_Long" unique_id=968089127]
+shape = SubResource("BoxShape3D_barrier_long")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierD_Long" unique_id=469217918]
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier_long")
+
+[node name="BarrierE_Long" type="StaticBody3D" parent="Barriers" unique_id=979556043]
+transform = Transform3D(-3.6199901e-06, 0, 1, 0, 1, 0, -1, 0, -3.6199901e-06, 7.6, 1.4, -3)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierE_Long" unique_id=306008270]
+shape = SubResource("BoxShape3D_barrier_long")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierE_Long" unique_id=971706762]
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier_long")
+
+[node name="BarrierF_Pillar" type="StaticBody3D" parent="Barriers" unique_id=2108096326]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 2, -11)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierF_Pillar" unique_id=1106409939]
+shape = SubResource("BoxShape3D_barrier_pillar")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierF_Pillar" unique_id=66665746]
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier_pillar")
+
+[node name="BarrierG_Pillar" type="StaticBody3D" parent="Barriers" unique_id=1904314058]
+transform = Transform3D(1, 0, 0, 0, 0.8004598, 0, 0, 0, 7.2774487, 2.8147898, 1.2510948, -11)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierG_Pillar" unique_id=341282877]
+shape = SubResource("BoxShape3D_barrier_pillar")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierG_Pillar" unique_id=1257612292]
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier_pillar")
+
+[node name="BarrierH" type="StaticBody3D" parent="Barriers" unique_id=1177235678]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.2, 1.2, 2)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierH" unique_id=1738946415]
+transform = Transform3D(2.3595963, 0, 0, 0, 0.9967999, 0, 0, 0, 0.9967999, 0.24620199, 0, 0)
+shape = SubResource("BoxShape3D_barrier")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierH" unique_id=966694847]
+transform = Transform3D(2.3595963, 0, 0, 0, 0.9967999, 0, 0, 0, 0.9967999, 0.24620199, 0, 0)
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier")
+
+[node name="BarrierI" type="StaticBody3D" parent="Barriers" unique_id=491071971]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.2, 1.2, -0.93707275)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierI" unique_id=1136282891]
+transform = Transform3D(2.3595963, 0, 0, 0, 0.9967999, 0, 0, 0, 0.9967999, 0.3571167, 0, 0)
+shape = SubResource("BoxShape3D_barrier")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierI" unique_id=926812065]
+transform = Transform3D(2.3595963, 0, 0, 0, 0.9967999, 0, 0, 0, 0.9967999, 0.3571167, 0, 0)
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier")
+
+[node name="BarrierJ_Long" type="StaticBody3D" parent="Barriers" unique_id=539159035]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.8, 1.4, 6.4)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierJ_Long" unique_id=566467722]
+shape = SubResource("BoxShape3D_barrier_long")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierJ_Long" unique_id=1659399127]
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier_long")
+
+[node name="BarrierK_Long" type="StaticBody3D" parent="Barriers" unique_id=469431795]
+transform = Transform3D(-3.6199901e-06, 0, 1, 0, 1, 0, -1, 0, -3.6199901e-06, -12.8, 1.4, 8)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierK_Long" unique_id=462383707]
+shape = SubResource("BoxShape3D_barrier_long")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierK_Long" unique_id=716684868]
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier_long")
+
+[node name="BarrierK_Long" type="StaticBody3D" parent="Barriers/BarrierK_Long" unique_id=1320194996]
+transform = Transform3D(-4.3580976e-06, 0, 1.0000019, 0, 1, 0, -1.2038976, 0, -3.619997e-06, 2.0055466, 0.045264125, -3.0866241)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierK_Long/BarrierK_Long" unique_id=1079012955]
+shape = SubResource("BoxShape3D_barrier_long")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierK_Long/BarrierK_Long" unique_id=716937464]
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier_long")
+
+[node name="BarrierL_Long" type="StaticBody3D" parent="Barriers" unique_id=19513371]
+transform = Transform3D(-3.6199901e-06, 0, 1, 0, 1, 0, -1, 0, -3.6199901e-06, 12.8, 1.4, 8)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierL_Long" unique_id=1144394571]
+shape = SubResource("BoxShape3D_barrier_long")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierL_Long" unique_id=315556682]
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier_long")
+
+[node name="BarrierL_Long" type="StaticBody3D" parent="Barriers/BarrierL_Long" unique_id=1823625624]
+transform = Transform3D(0.9999879, 0, -0.004953065, 0, 1, 0, 0.004953065, 0, 0.9999879, 20.736076, 0.0016897917, -26.612762)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierL_Long/BarrierL_Long" unique_id=641224456]
+shape = SubResource("BoxShape3D_barrier_long")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierL_Long/BarrierL_Long" unique_id=1598442888]
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier_long")
+
+[node name="BarrierM" type="StaticBody3D" parent="Barriers" unique_id=1994602759]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.8, 1.2, -10.2)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierM" unique_id=35033252]
+transform = Transform3D(2.9300976, 0, 0, 0, 1.3072361, 0, 0, 0, 1, 0, 0.15380812, 0)
+shape = SubResource("BoxShape3D_barrier")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierM" unique_id=566505555]
+transform = Transform3D(2.9300976, 0, 0, 0, 1.3072361, 0, 0, 0, 1, 0, 0.15380812, 0)
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier")
+
+[node name="BarrierN" type="StaticBody3D" parent="Barriers" unique_id=1356057601]
+transform = Transform3D(1.7237077, 0, 0, 0, 1, 0, 0, 0, 1, 12.346726, 1.2, -10.2)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierN" unique_id=329974050]
+shape = SubResource("BoxShape3D_barrier")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierN" unique_id=661555885]
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier")
+
+[node name="BarrierO_Pillar" type="StaticBody3D" parent="Barriers" unique_id=2030313371]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.6, 2, -2)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierO_Pillar" unique_id=1140531007]
+shape = SubResource("BoxShape3D_barrier_pillar")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierO_Pillar" unique_id=406128606]
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier_pillar")
+
+[node name="BarrierP_Long" type="StaticBody3D" parent="Barriers" unique_id=2022118478]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 1.4, -12)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierP_Long" unique_id=1931616205]
+transform = Transform3D(2.222418, 0, 0, 0, 1, 0, 0, 0, 1, 7.637602, 0, -3.4615145)
+shape = SubResource("BoxShape3D_barrier_long")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierP_Long" unique_id=901431301]
+transform = Transform3D(2.222418, 0, 0, 0, 1, 0, 0, 0, 1, 7.637602, 0, -3.4615145)
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier_long")
+
+[node name="BarrierQ_Long" type="StaticBody3D" parent="Barriers" unique_id=1048943082]
+transform = Transform3D(-3.6199901e-06, 0, 1, 0, 1, 0, -1, 0, -3.6199901e-06, -14, 1.4, -5)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierQ_Long" unique_id=1835585988]
+transform = Transform3D(1.9542247, 0, 0, 0, 1, 0, 0, 0, 1.0000035, -0.037870407, 0.0260849, 0.006450653)
+shape = SubResource("BoxShape3D_barrier_long")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierQ_Long" unique_id=539918595]
+transform = Transform3D(2.0129626, 0, -2.2737368e-13, 0, 0.99993485, 0, 4.5474735e-13, 0, 0.9999386, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier_long")
+
+[node name="BarrierQ_Long" type="StaticBody3D" parent="Barriers/BarrierQ_Long" unique_id=1581729277]
+transform = Transform3D(-3.6199901e-06, 0, 1, 0, 1, 0, -1, 0, -3.6199901e-06, 9.054448, -0.42262805, 24.374615)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierQ_Long/BarrierQ_Long" unique_id=282484398]
+transform = Transform3D(1.9542247, 0, 0, 0, 1, 0, 0, 0, 1.0000035, -0.037870407, 0.0260849, 0.006450653)
+shape = SubResource("BoxShape3D_barrier_long")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierQ_Long/BarrierQ_Long" unique_id=1048304201]
+transform = Transform3D(2.0129626, 0, -2.2737368e-13, 0, 0.99993485, 0, 4.5474735e-13, 0, 0.9999386, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier_long")
+
+[node name="BarrierR_Long" type="StaticBody3D" parent="Barriers" unique_id=685918938]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.5, 1.4, -0.8)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierR_Long" unique_id=1800877140]
+shape = SubResource("BoxShape3D_barrier_long")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierR_Long" unique_id=2144809482]
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier_long")
+
+[node name="BarrierS_Long" type="StaticBody3D" parent="Barriers" unique_id=704255607]
+transform = Transform3D(-3.6199901e-06, 0, 1, 0, 1, 0, -1, 0, -3.6199901e-06, -4.2, 1.4, -4.2)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierS_Long" unique_id=1081752676]
+shape = SubResource("BoxShape3D_barrier_long")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierS_Long" unique_id=1694886462]
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier_long")
+
+[node name="BarrierT_Long" type="StaticBody3D" parent="Barriers" unique_id=1426698213]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8, 1.4, -6)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierT_Long" unique_id=2025793038]
+shape = SubResource("BoxShape3D_barrier_long")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierT_Long" unique_id=534811799]
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier_long")
+
+[node name="BarrierU_Long" type="StaticBody3D" parent="Barriers" unique_id=400723772]
+transform = Transform3D(-3.6199901e-06, 0, 1, 0, 1, 0, -1, 0, -3.6199901e-06, 6.2, 1.4, -9.2)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierU_Long" unique_id=891371809]
+shape = SubResource("BoxShape3D_barrier_long")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierU_Long" unique_id=1996433298]
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier_long")
+
+[node name="BarrierV_Long" type="StaticBody3D" parent="Barriers" unique_id=826217994]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.8, 1.4, -6.4)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierV_Long" unique_id=643622370]
+shape = SubResource("BoxShape3D_barrier_long")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierV_Long" unique_id=196596473]
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier_long")
+
+[node name="BarrierW_Long" type="StaticBody3D" parent="Barriers" unique_id=1023351950]
+transform = Transform3D(-3.6199901e-06, 0, 1, 0, 1, 0, -1, 0, -3.6199901e-06, 14, 1.4, 0.6)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierW_Long" unique_id=694734520]
+shape = SubResource("BoxShape3D_barrier_long")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierW_Long" unique_id=1475633364]
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier_long")
+
+[node name="BarrierX_Long" type="StaticBody3D" parent="Barriers" unique_id=1595720506]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.6, 1.4, 3.8)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierX_Long" unique_id=1177825387]
+shape = SubResource("BoxShape3D_barrier_long")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierX_Long" unique_id=1188892674]
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier_long")
+
+[node name="BarrierY_Long" type="StaticBody3D" parent="Barriers" unique_id=780329766]
+transform = Transform3D(-3.6199901e-06, 0, 1, 0, 1, 0, -1, 0, -3.6199901e-06, 6.6, 1.4, 10.6)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierY_Long" unique_id=1258544982]
+shape = SubResource("BoxShape3D_barrier_long")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierY_Long" unique_id=355871120]
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier_long")
+
+[node name="BarrierY_Long" type="StaticBody3D" parent="Barriers/BarrierY_Long" unique_id=1905549569]
+transform = Transform3D(-0.9999979, 0, -0.0020455983, 0, 1, 0, 0.0020455983, 0, -0.9999979, -7.3961782, -0.44716895, 6.331759)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierY_Long/BarrierY_Long" unique_id=960027255]
+shape = SubResource("BoxShape3D_barrier_long")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierY_Long/BarrierY_Long" unique_id=242540900]
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier_long")
+
+[node name="BarrierZ_Long" type="StaticBody3D" parent="Barriers" unique_id=1660246003]
+transform = Transform3D(-3.6199901e-06, 0, 1, 0, 1, 0, -1, 0, -3.6199901e-06, -6.6, 1.4, 10.6)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierZ_Long" unique_id=1953784456]
+shape = SubResource("BoxShape3D_barrier_long")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierZ_Long" unique_id=1383731037]
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier_long")
+
+[node name="BarrierZ_Long" type="StaticBody3D" parent="Barriers/BarrierZ_Long" unique_id=863436354]
+transform = Transform3D(0.9999663, 0, -0.008234289, 0, 1, 0, 0.008234289, 0, 0.9999663, -6.599946, -0.23379767, -4.6139665)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierZ_Long/BarrierZ_Long" unique_id=393691531]
+shape = SubResource("BoxShape3D_barrier_long")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierZ_Long/BarrierZ_Long" unique_id=808085015]
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier_long")
+
+[node name="BarrierAA" type="StaticBody3D" parent="Barriers" unique_id=1357102418]
+transform = Transform3D(1, 0, 0, 0, 1.306268, 0, 0, 0, 1, -8.4, 1.2, 6.362244)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierAA" unique_id=1684643148]
+shape = SubResource("BoxShape3D_barrier")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierAA" unique_id=1446359962]
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier")
+
+[node name="BarrierAB" type="StaticBody3D" parent="Barriers" unique_id=486179757]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.6, 1.2, 1)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierAB" unique_id=1869480714]
+shape = SubResource("BoxShape3D_barrier")
+
+[node name="BarrierAC" type="StaticBody3D" parent="Barriers" unique_id=2100441222]
+transform = Transform3D(1, 0, 0, 0, 1.3274662, 0, 0, 0, 1, 10.4, 1.2, 9.2)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierAC" unique_id=1187295049]
+transform = Transform3D(1.3324655, 0, 0, 0, 1, 0, 0, 0, 1, 0.3627367, 0, 0)
+shape = SubResource("BoxShape3D_barrier")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierAC" unique_id=199181424]
+transform = Transform3D(1.3324655, 0, 0, 0, 1, 0, 0, 0, 1, 0.3627367, 0, 0)
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier")
+
+[node name="BarrierAC" type="StaticBody3D" parent="Barriers/BarrierAC" unique_id=673597665]
+transform = Transform3D(0.99999964, 0, 0, 0, 1.3274661, 0, 0, 0, 0.99999964, 3.2129536, -0.4078897, 1.1912117)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierAC/BarrierAC" unique_id=330521891]
+transform = Transform3D(1.3324655, 0, 0, 0, 1, 0, 0, 0, 1, 0.3627367, 0, 0)
+shape = SubResource("BoxShape3D_barrier")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierAC/BarrierAC" unique_id=775137459]
+transform = Transform3D(1.3324655, 0, 0, 0, 1, 0, 0, 0, 1, 0.3627367, 0, 0)
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier")
+
+[node name="BarrierAC" type="StaticBody3D" parent="Barriers/BarrierAC/BarrierAC" unique_id=420397978]
+transform = Transform3D(4.342602, 0, 0, 0, 0.969545, 0, 0, 0, 0.99999964, -5.529251, -0.13734822, 5.006854)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierAC/BarrierAC/BarrierAC" unique_id=1354964559]
+transform = Transform3D(1.3324655, 0, 0, 0, 1, 0, 0, 0, 1, 0.3627367, 0, 0)
+shape = SubResource("BoxShape3D_barrier")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierAC/BarrierAC/BarrierAC" unique_id=1810379714]
+transform = Transform3D(1.3324655, 0, 0, 0, 1, 0, 0, 0, 1, 0.3627367, 0, 0)
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier")
+
+[node name="BarrierAD_Pillar" type="StaticBody3D" parent="Barriers" unique_id=1979394643]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.2, 2, 4.8)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierAD_Pillar" unique_id=477366924]
+shape = SubResource("BoxShape3D_barrier_pillar")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierAD_Pillar" unique_id=980999904]
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier_pillar")
+
+[node name="BarrierAE_Pillar" type="StaticBody3D" parent="Barriers" unique_id=517539675]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 3.6522949, 11.2, 2, 2)
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Barriers/BarrierAE_Pillar" unique_id=2004991966]
+shape = SubResource("BoxShape3D_barrier_pillar")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Barriers/BarrierAE_Pillar" unique_id=1023138072]
+material_override = SubResource("StandardMaterial3D_barrier")
+mesh = SubResource("BoxMesh_barrier_pillar")
+
+[node name="Projectiles" type="Node3D" parent="." unique_id=1814201257]
+
+[node name="Enemies" type="Node3D" parent="." unique_id=1310168794]
+
+[node name="EnemyA" type="CharacterBody3D" parent="Enemies" unique_id=94373561]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.8, 0.8, -4.6)
+collision_layer = 4
+collision_mask = 3
+script = ExtResource("4")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Enemies/EnemyA" unique_id=1704283793]
+shape = SubResource("CapsuleShape3D_enemy")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Enemies/EnemyA" unique_id=2028896921]
+transform = Transform3D(0.85, 0, 0, 0, 0.85, 0, 0, 0, 0.85, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_goblin_skin")
+mesh = SubResource("CapsuleMesh_enemy")
+
+[node name="GoblinHead" type="MeshInstance3D" parent="Enemies/EnemyA" unique_id=1474659082]
+transform = Transform3D(0.95, 0, 0, 0, 0.95, 0, 0, 0, 0.95, 0, 0.48, 0)
+material_override = SubResource("StandardMaterial3D_goblin_skin")
+mesh = SubResource("SphereMesh_goblin_head")
+
+[node name="GoblinDagger" type="MeshInstance3D" parent="Enemies/EnemyA" unique_id=251433118]
+transform = Transform3D(0.978031, 0.20846, 0, -0.20846, 0.978031, 0, 0, 0, 1, 0.26, 0.02, -0.16)
+material_override = SubResource("StandardMaterial3D_goblin_blade")
+mesh = SubResource("BoxMesh_goblin_dagger")
+
+[node name="EnemyB" type="CharacterBody3D" parent="Enemies" unique_id=1819206768]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.430086, 0.8, -8.611706)
+collision_layer = 4
+collision_mask = 3
+script = ExtResource("4")
+kind = "raider"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Enemies/EnemyB" unique_id=100166561]
+shape = SubResource("CapsuleShape3D_enemy")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Enemies/EnemyB" unique_id=1541799080]
+transform = Transform3D(0.88, 0, 0, 0, 1.06, 0, 0, 0, 0.88, 0, -0.04, 0)
+material_override = SubResource("StandardMaterial3D_wizard_robe")
+mesh = SubResource("CapsuleMesh_enemy")
+
+[node name="WizardHead" type="MeshInstance3D" parent="Enemies/EnemyB" unique_id=1922975209]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+material_override = SubResource("StandardMaterial3D_wizard_skin")
+mesh = SubResource("SphereMesh_wizard_head")
+
+[node name="WizardHat" type="MeshInstance3D" parent="Enemies/EnemyB" unique_id=654677161]
+transform = Transform3D(0.992809, -0.119712, 0, 0.119712, 0.992809, 0, 0, 0, 1, 0, 0.76, 0)
+material_override = SubResource("StandardMaterial3D_wizard_robe")
+mesh = SubResource("CylinderMesh_wizard_hat")
+
+[node name="WizardStaff" type="MeshInstance3D" parent="Enemies/EnemyB" unique_id=164584812]
+transform = Transform3D(0.969061, 0.246824, 0, -0.246824, 0.969061, 0, 0, 0, 1, 0.24, 0.05, -0.12)
+material_override = SubResource("StandardMaterial3D_wizard_staff")
+mesh = SubResource("CylinderMesh_wizard_staff")
+
+[node name="EnemyB2" type="CharacterBody3D" parent="Enemies" unique_id=1114408694]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.669575, 0.3004859, 13.54615)
+collision_layer = 4
+collision_mask = 3
+script = ExtResource("4")
+kind = "raider"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Enemies/EnemyB2" unique_id=1106858107]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.029447556, -0.014661312, 0.003230095)
+shape = SubResource("CapsuleShape3D_enemy")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Enemies/EnemyB2" unique_id=1963009441]
+transform = Transform3D(0.88, 0, 0, 0, 1.06, 0, 0, 0, 0.88, 0, -0.04, 0)
+material_override = SubResource("StandardMaterial3D_wizard_robe")
+mesh = SubResource("CapsuleMesh_enemy")
+
+[node name="WizardHead" type="MeshInstance3D" parent="Enemies/EnemyB2" unique_id=490077456]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+material_override = SubResource("StandardMaterial3D_wizard_skin")
+mesh = SubResource("SphereMesh_wizard_head")
+
+[node name="WizardHat" type="MeshInstance3D" parent="Enemies/EnemyB2" unique_id=288705129]
+transform = Transform3D(0.992809, -0.119712, 0, 0.119712, 0.992809, 0, 0, 0, 1, 0, 0.76, 0)
+material_override = SubResource("StandardMaterial3D_wizard_robe")
+mesh = SubResource("CylinderMesh_wizard_hat")
+
+[node name="WizardStaff" type="MeshInstance3D" parent="Enemies/EnemyB2" unique_id=1540293423]
+transform = Transform3D(0.969061, 0.246824, 0, -0.246824, 0.969061, 0, 0, 0, 1, 0.24, 0.05, -0.12)
+material_override = SubResource("StandardMaterial3D_wizard_staff")
+mesh = SubResource("CylinderMesh_wizard_staff")
+
+[node name="EnemyC" type="CharacterBody3D" parent="Enemies" unique_id=1724793570]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.4, 0.8, 3.4)
+collision_layer = 4
+collision_mask = 3
+script = ExtResource("4")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Enemies/EnemyC" unique_id=564480247]
+shape = SubResource("CapsuleShape3D_enemy")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Enemies/EnemyC" unique_id=1361979490]
+transform = Transform3D(0.85, 0, 0, 0, 0.85, 0, 0, 0, 0.85, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_goblin_skin")
+mesh = SubResource("CapsuleMesh_enemy")
+
+[node name="GoblinHead" type="MeshInstance3D" parent="Enemies/EnemyC" unique_id=355674824]
+transform = Transform3D(0.95, 0, 0, 0, 0.95, 0, 0, 0, 0.95, 0, 0.48, 0)
+material_override = SubResource("StandardMaterial3D_goblin_skin")
+mesh = SubResource("SphereMesh_goblin_head")
+
+[node name="GoblinDagger" type="MeshInstance3D" parent="Enemies/EnemyC" unique_id=272732060]
+transform = Transform3D(0.978031, 0.20846, 0, -0.20846, 0.978031, 0, 0, 0, 1, 0.26, 0.02, -0.16)
+material_override = SubResource("StandardMaterial3D_goblin_blade")
+mesh = SubResource("BoxMesh_goblin_dagger")
+
+[node name="EnemyC2" type="CharacterBody3D" parent="Enemies" unique_id=192237360]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.183092, 0.52138406, -14.178766)
+collision_layer = 4
+collision_mask = 3
+script = ExtResource("4")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Enemies/EnemyC2" unique_id=789666126]
+shape = SubResource("CapsuleShape3D_enemy")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Enemies/EnemyC2" unique_id=1562803288]
+transform = Transform3D(0.85, 0, 0, 0, 0.85, 0, 0, 0, 0.85, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_goblin_skin")
+mesh = SubResource("CapsuleMesh_enemy")
+
+[node name="GoblinHead" type="MeshInstance3D" parent="Enemies/EnemyC2" unique_id=1883829820]
+transform = Transform3D(0.95, 0, 0, 0, 0.95, 0, 0, 0, 0.95, 0, 0.48, 0)
+material_override = SubResource("StandardMaterial3D_goblin_skin")
+mesh = SubResource("SphereMesh_goblin_head")
+
+[node name="GoblinDagger" type="MeshInstance3D" parent="Enemies/EnemyC2" unique_id=1663411657]
+transform = Transform3D(0.978031, 0.20846, 0, -0.20846, 0.978031, 0, 0, 0, 1, 0.26, 0.02, -0.16)
+material_override = SubResource("StandardMaterial3D_goblin_blade")
+mesh = SubResource("BoxMesh_goblin_dagger")
+
+[node name="EnemyC3" type="CharacterBody3D" parent="Enemies" unique_id=1437801845]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17.451723, 0.1926974, 7.69925)
+collision_layer = 4
+collision_mask = 3
+script = ExtResource("4")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Enemies/EnemyC3" unique_id=803635769]
+shape = SubResource("CapsuleShape3D_enemy")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Enemies/EnemyC3" unique_id=333435174]
+transform = Transform3D(0.85, 0, 0, 0, 0.85, 0, 0, 0, 0.85, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_goblin_skin")
+mesh = SubResource("CapsuleMesh_enemy")
+
+[node name="GoblinHead" type="MeshInstance3D" parent="Enemies/EnemyC3" unique_id=1547496560]
+transform = Transform3D(0.95, 0, 0, 0, 0.95, 0, 0, 0, 0.95, 0, 0.48, 0)
+material_override = SubResource("StandardMaterial3D_goblin_skin")
+mesh = SubResource("SphereMesh_goblin_head")
+
+[node name="GoblinDagger" type="MeshInstance3D" parent="Enemies/EnemyC3" unique_id=1581340172]
+transform = Transform3D(0.978031, 0.20846, 0, -0.20846, 0.978031, 0, 0, 0, 1, 0.26, 0.02, -0.16)
+material_override = SubResource("StandardMaterial3D_goblin_blade")
+mesh = SubResource("BoxMesh_goblin_dagger")
+
+[node name="EnemyC4" type="CharacterBody3D" parent="Enemies" unique_id=2129507739]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17.742907, -2.130669, -20.13184)
+collision_layer = 4
+collision_mask = 3
+script = ExtResource("4")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Enemies/EnemyC4" unique_id=223253662]
+shape = SubResource("CapsuleShape3D_enemy")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Enemies/EnemyC4" unique_id=1470507596]
+transform = Transform3D(0.85, 0, 0, 0, 0.85, 0, 0, 0, 0.85, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_goblin_skin")
+mesh = SubResource("CapsuleMesh_enemy")
+
+[node name="GoblinHead" type="MeshInstance3D" parent="Enemies/EnemyC4" unique_id=974407629]
+transform = Transform3D(0.95, 0, 0, 0, 0.95, 0, 0, 0, 0.95, 0, 0.48, 0)
+material_override = SubResource("StandardMaterial3D_goblin_skin")
+mesh = SubResource("SphereMesh_goblin_head")
+
+[node name="GoblinDagger" type="MeshInstance3D" parent="Enemies/EnemyC4" unique_id=183168996]
+transform = Transform3D(0.978031, 0.20846, 0, -0.20846, 0.978031, 0, 0, 0, 1, 0.26, 0.02, -0.16)
+material_override = SubResource("StandardMaterial3D_goblin_blade")
+mesh = SubResource("BoxMesh_goblin_dagger")
+
+[node name="EnemyD" type="CharacterBody3D" parent="Enemies" unique_id=212926980]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.8, 0.8, 8.205772)
+collision_layer = 4
+collision_mask = 3
+script = ExtResource("4")
+kind = "raider"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Enemies/EnemyD" unique_id=1129692116]
+shape = SubResource("CapsuleShape3D_enemy")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Enemies/EnemyD" unique_id=590299947]
+transform = Transform3D(0.88, 0, 0, 0, 1.06, 0, 0, 0, 0.88, 0, -0.04, 0)
+material_override = SubResource("StandardMaterial3D_wizard_robe")
+mesh = SubResource("CapsuleMesh_enemy")
+
+[node name="WizardHead" type="MeshInstance3D" parent="Enemies/EnemyD" unique_id=755126436]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+material_override = SubResource("StandardMaterial3D_wizard_skin")
+mesh = SubResource("SphereMesh_wizard_head")
+
+[node name="WizardHat" type="MeshInstance3D" parent="Enemies/EnemyD" unique_id=1439605097]
+transform = Transform3D(0.992809, -0.119712, 0, 0.119712, 0.992809, 0, 0, 0, 1, 0, 0.76, 0)
+material_override = SubResource("StandardMaterial3D_wizard_robe")
+mesh = SubResource("CylinderMesh_wizard_hat")
+
+[node name="WizardStaff" type="MeshInstance3D" parent="Enemies/EnemyD" unique_id=1414020525]
+transform = Transform3D(0.969061, 0.246824, 0, -0.246824, 0.969061, 0, 0, 0, 1, 0.24, 0.05, -0.12)
+material_override = SubResource("StandardMaterial3D_wizard_staff")
+mesh = SubResource("CylinderMesh_wizard_staff")
+
+[node name="EnemyD2" type="CharacterBody3D" parent="Enemies" unique_id=19058512]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.464992, 0.8, -1.1790714)
+collision_layer = 4
+collision_mask = 3
+script = ExtResource("4")
+kind = "raider"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Enemies/EnemyD2" unique_id=1808193063]
+shape = SubResource("CapsuleShape3D_enemy")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Enemies/EnemyD2" unique_id=486134459]
+transform = Transform3D(0.88, 0, 0, 0, 1.06, 0, 0, 0, 0.88, 0, -0.04, 0)
+material_override = SubResource("StandardMaterial3D_wizard_robe")
+mesh = SubResource("CapsuleMesh_enemy")
+
+[node name="WizardHead" type="MeshInstance3D" parent="Enemies/EnemyD2" unique_id=208490235]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+material_override = SubResource("StandardMaterial3D_wizard_skin")
+mesh = SubResource("SphereMesh_wizard_head")
+
+[node name="WizardHat" type="MeshInstance3D" parent="Enemies/EnemyD2" unique_id=1883196722]
+transform = Transform3D(0.992809, -0.119712, 0, 0.119712, 0.992809, 0, 0, 0, 1, 0, 0.76, 0)
+material_override = SubResource("StandardMaterial3D_wizard_robe")
+mesh = SubResource("CylinderMesh_wizard_hat")
+
+[node name="WizardStaff" type="MeshInstance3D" parent="Enemies/EnemyD2" unique_id=613026286]
+transform = Transform3D(0.969061, 0.246824, 0, -0.246824, 0.969061, 0, 0, 0, 1, 0.24, 0.05, -0.12)
+material_override = SubResource("StandardMaterial3D_wizard_staff")
+mesh = SubResource("CylinderMesh_wizard_staff")
+
+[node name="EnemyD3" type="CharacterBody3D" parent="Enemies" unique_id=757158312]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.101812, 0.8000001, 8.535347)
+collision_layer = 4
+collision_mask = 3
+script = ExtResource("4")
+kind = "raider"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Enemies/EnemyD3" unique_id=167531542]
+shape = SubResource("CapsuleShape3D_enemy")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Enemies/EnemyD3" unique_id=621316023]
+transform = Transform3D(0.88, 0, 0, 0, 1.06, 0, 0, 0, 0.88, 0, -0.04, 0)
+material_override = SubResource("StandardMaterial3D_wizard_robe")
+mesh = SubResource("CapsuleMesh_enemy")
+
+[node name="WizardHead" type="MeshInstance3D" parent="Enemies/EnemyD3" unique_id=357597565]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+material_override = SubResource("StandardMaterial3D_wizard_skin")
+mesh = SubResource("SphereMesh_wizard_head")
+
+[node name="WizardHat" type="MeshInstance3D" parent="Enemies/EnemyD3" unique_id=410200606]
+transform = Transform3D(0.992809, -0.119712, 0, 0.119712, 0.992809, 0, 0, 0, 1, 0, 0.76, 0)
+material_override = SubResource("StandardMaterial3D_wizard_robe")
+mesh = SubResource("CylinderMesh_wizard_hat")
+
+[node name="WizardStaff" type="MeshInstance3D" parent="Enemies/EnemyD3" unique_id=1275052982]
+transform = Transform3D(0.969061, 0.246824, 0, -0.246824, 0.969061, 0, 0, 0, 1, 0.24, 0.05, -0.12)
+material_override = SubResource("StandardMaterial3D_wizard_staff")
+mesh = SubResource("CylinderMesh_wizard_staff")
+
+[node name="Runestones" type="Node3D" parent="." unique_id=1254973353]
+
+[node name="Runestone1" type="StaticBody3D" parent="Runestones" unique_id=1097089439]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.39402, 0.22, -8.771973)
+collision_layer = 5
+collision_mask = 0
+script = ExtResource("5")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Runestones/Runestone1" unique_id=25466507]
+shape = SubResource("SphereShape3D_runestone")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Runestones/Runestone1" unique_id=1493659239]
+transform = Transform3D(0.996195, 0, -0.0871557, 0.0151344, 0.984808, 0.172987, 0.0858317, -0.173648, 0.98106, 0, 0.72, 0)
+material_override = SubResource("StandardMaterial3D_runestone")
+mesh = SubResource("SphereMesh_runestone")
+
+[node name="Runestone2" type="StaticBody3D" parent="Runestones" unique_id=1029538513]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.29884, 0.22, 16.79171)
+collision_layer = 5
+collision_mask = 0
+script = ExtResource("5")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Runestones/Runestone2" unique_id=1283680906]
+transform = Transform3D(0.994522, 0, 0.104528, -0.0181512, 0.984808, 0.172697, -0.10294, -0.173648, 0.979414, 0, 0.72, 0)
+shape = SubResource("SphereShape3D_runestone")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Runestones/Runestone2" unique_id=126228339]
+transform = Transform3D(0.994522, 0, 0.104528, -0.0181512, 0.984808, 0.172697, -0.10294, -0.173648, 0.979414, 0, 0.72, 0)
+material_override = SubResource("StandardMaterial3D_runestone")
+mesh = SubResource("SphereMesh_runestone")
+
+[node name="Runestone3" type="StaticBody3D" parent="Runestones" unique_id=891590578]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.431064, 0.22, 8)
+collision_layer = 5
+collision_mask = 0
+script = ExtResource("5")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Runestones/Runestone3" unique_id=615145950]
+shape = SubResource("SphereShape3D_runestone")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Runestones/Runestone3" unique_id=708937384]
+transform = Transform3D(0.99863, 0, -0.052336, 0.00908804, 0.984808, 0.17341, 0.0515412, -0.173648, 0.983459, 0, 0.72, 0)
+material_override = SubResource("StandardMaterial3D_runestone")
+mesh = SubResource("SphereMesh_runestone")
+
+[node name="Gate" type="StaticBody3D" parent="." unique_id=1116494265]
+transform = Transform3D(1.9472599, 0, 0, 0, 2.3718247, 0, 0, 0, 1, 0, 0.6, 18.083279)
+collision_layer = 5
+collision_mask = 0
+script = ExtResource("6")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Gate" unique_id=28341155]
+shape = SubResource("BoxShape3D_gate")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Gate" unique_id=642372263]
+material_override = SubResource("StandardMaterial3D_gate")
+mesh = SubResource("BoxMesh_gate")
+
+[node name="GateField" type="MeshInstance3D" parent="Gate" unique_id=1741076291]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.12)
+material_override = SubResource("StandardMaterial3D_gate_field")
+mesh = SubResource("BoxMesh_gate_field")
+
+[node name="LeftFrame" type="MeshInstance3D" parent="Gate" unique_id=1805447762]
+transform = Transform3D(0.22, 0, 0, 0, 0.58, 0, 0, 0, 0.16, -1.26, 0, -0.08)
+material_override = SubResource("StandardMaterial3D_gate")
+mesh = SubResource("BoxMesh_barrier_pillar")
+
+[node name="RightFrame" type="MeshInstance3D" parent="Gate" unique_id=685092526]
+transform = Transform3D(0.22, 0, 0, 0, 0.58, 0, 0, 0, 0.16, 1.26, 0, -0.08)
+material_override = SubResource("StandardMaterial3D_gate")
+mesh = SubResource("BoxMesh_barrier_pillar")
+
+[node name="TopLintel" type="MeshInstance3D" parent="Gate" unique_id=667968734]
+transform = Transform3D(0.56, 0, 0, 0, 0.12, 0, 0, 0, 0.16, 0, 0.76, -0.08)
+material_override = SubResource("StandardMaterial3D_gate")
+mesh = SubResource("BoxMesh_barrier_long")
+
+[node name="BottomLintel" type="MeshInstance3D" parent="Gate" unique_id=1532999418]
+transform = Transform3D(0.56, 0, 0, 0, 0.12, 0, 0, 0, 0.16, 0, -0.76, -0.08)
+material_override = SubResource("StandardMaterial3D_gate")
+mesh = SubResource("BoxMesh_barrier_long")
+
+[node name="CenterSigil" type="MeshInstance3D" parent="Gate" unique_id=2146994036]
+transform = Transform3D(0.06, 0, 0, 0, 0.06, 0, 0, 0, 0.12, 0, 0, -0.18)
+material_override = SubResource("StandardMaterial3D_gate")
+mesh = SubResource("BoxMesh_barrier")
+
+[node name="GateBars" type="Node3D" parent="Gate" unique_id=1437727759]
+
+[node name="NPCs" type="Node3D" parent="." unique_id=1680382949]
+
+[node name="Captain" type="StaticBody3D" parent="NPCs" unique_id=2144501910]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.3, -5)
+collision_layer = 5
+collision_mask = 0
+script = ExtResource("7")
+npc_name = "Captain Rowan"
+lines = PackedStringArray("You are late, sellsword. The mire stinks of troll blood tonight.", "The north portcullis is warded by three runestones. Fill them with stormcraft and it will rise.", "Keep your shield up. Trolls rush when they smell fear.")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NPCs/Captain" unique_id=1243524932]
+shape = SubResource("CapsuleShape3D_npc")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="NPCs/Captain" unique_id=1805038574]
+material_override = SubResource("StandardMaterial3D_npc")
+mesh = SubResource("CylinderMesh_npc")
+
+[node name="HUD" type="CanvasLayer" parent="." unique_id=900759882]
+
+[node name="Margin" type="MarginContainer" parent="HUD" unique_id=1541664767]
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 790.0
+offset_bottom = 280.0
+
+[node name="Panel" type="PanelContainer" parent="HUD/Margin" unique_id=856795226]
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="HUD/Margin/Panel" unique_id=473497041]
+layout_mode = 2
+
+[node name="Bars" type="VBoxContainer" parent="HUD/Margin/Panel/VBox" unique_id=535719680]
+layout_mode = 2
+
+[node name="HPLabel" type="Label" parent="HUD/Margin/Panel/VBox/Bars" unique_id=1135122219]
+layout_mode = 2
+text = "HP"
+
+[node name="HPBar" type="ProgressBar" parent="HUD/Margin/Panel/VBox/Bars" unique_id=236145107]
+layout_mode = 2
+value = 100.0
+
+[node name="STALabel" type="Label" parent="HUD/Margin/Panel/VBox/Bars" unique_id=123883795]
+layout_mode = 2
+text = "STA"
+
+[node name="STAbar" type="ProgressBar" parent="HUD/Margin/Panel/VBox/Bars" unique_id=340704795]
+layout_mode = 2
+value = 100.0
+
+[node name="RuneCounterValue" type="Label" parent="HUD/Margin/Panel/VBox" unique_id=855892413]
+layout_mode = 2
+text = "Runes: 0/3"
+
+[node name="ObjectiveTitle" type="Label" parent="HUD/Margin/Panel/VBox" unique_id=1587067969]
+layout_mode = 2
+text = "Objective"
+
+[node name="ObjectiveValue" type="Label" parent="HUD/Margin/Panel/VBox" unique_id=1958091530]
+layout_mode = 2
+text = "-"
+autowrap_mode = 3
+
+[node name="MessageTitle" type="Label" parent="HUD/Margin/Panel/VBox" unique_id=490491744]
+layout_mode = 2
+text = "Message"
+
+[node name="MessageValue" type="Label" parent="HUD/Margin/Panel/VBox" unique_id=115448901]
+layout_mode = 2
+text = "-"
+autowrap_mode = 3
+
+[node name="ClueTitle" type="Label" parent="HUD/Margin/Panel/VBox" unique_id=822475971]
+layout_mode = 2
+text = "Clue"
+
+[node name="ClueValue" type="Label" parent="HUD/Margin/Panel/VBox" unique_id=954823967]
+layout_mode = 2
+text = "-"
+autowrap_mode = 3
+
+[node name="DebugMargin" type="MarginContainer" parent="HUD" unique_id=346921152]
+offset_left = 820.0
+offset_top = 10.0
+offset_right = 1260.0
+offset_bottom = 290.0
+
+[node name="DebugPanel" type="PanelContainer" parent="HUD/DebugMargin" unique_id=233947975]
+layout_mode = 2
+
+[node name="DebugVBox" type="VBoxContainer" parent="HUD/DebugMargin/DebugPanel" unique_id=748614359]
+layout_mode = 2
+
+[node name="DebugTitle" type="Label" parent="HUD/DebugMargin/DebugPanel/DebugVBox" unique_id=1089076326]
+layout_mode = 2
+text = "Debug (F3)"
+
+[node name="DebugValue" type="Label" parent="HUD/DebugMargin/DebugPanel/DebugVBox" unique_id=1795130638]
+layout_mode = 2
+text = "-"
+autowrap_mode = 3
+
+[node name="Audio" type="Node" parent="." unique_id=1687183274]
+
+[node name="MusicPlayer" type="AudioStreamPlayer" parent="Audio" unique_id=2104703875]
+volume_db = -2.33
+
+[node name="SFXPlayer" type="AudioStreamPlayer" parent="Audio" unique_id=1500268889]
+volume_db = -0.92
+
+[node name="UIPlayer" type="AudioStreamPlayer" parent="Audio" unique_id=598048385]
+volume_db = -0.92
+
+[node name="EnemyC" type="CharacterBody3D" parent="." unique_id=1413253292]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.368944, 0.8, -9.47604)
+collision_layer = 4
+collision_mask = 3
+script = ExtResource("4")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="EnemyC" unique_id=1319743923]
+shape = SubResource("CapsuleShape3D_enemy")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="EnemyC" unique_id=1001133952]
+transform = Transform3D(0.85, 0, 0, 0, 0.85, 0, 0, 0, 0.85, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_goblin_skin")
+mesh = SubResource("CapsuleMesh_enemy")
+
+[node name="GoblinHead" type="MeshInstance3D" parent="EnemyC" unique_id=1002219371]
+transform = Transform3D(0.95, 0, 0, 0, 0.95, 0, 0, 0, 0.95, 0, 0.48, 0)
+material_override = SubResource("StandardMaterial3D_goblin_skin")
+mesh = SubResource("SphereMesh_goblin_head")
+
+[node name="GoblinDagger" type="MeshInstance3D" parent="EnemyC" unique_id=1281062816]
+transform = Transform3D(0.978031, 0.20846, 0, -0.20846, 0.978031, 0, 0, 0, 1, 0.26, 0.02, -0.16)
+material_override = SubResource("StandardMaterial3D_goblin_blade")
+mesh = SubResource("BoxMesh_goblin_dagger")
+
+[node name="EnemyC3" type="CharacterBody3D" parent="." unique_id=817728235]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.1909895, 0.1926974, 15.724742)
+collision_layer = 4
+collision_mask = 3
+script = ExtResource("4")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="EnemyC3" unique_id=1306763286]
+shape = SubResource("CapsuleShape3D_enemy")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="EnemyC3" unique_id=623081706]
+transform = Transform3D(0.85, 0, 0, 0, 0.85, 0, 0, 0, 0.85, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_goblin_skin")
+mesh = SubResource("CapsuleMesh_enemy")
+
+[node name="GoblinHead" type="MeshInstance3D" parent="EnemyC3" unique_id=1145116890]
+transform = Transform3D(0.95, 0, 0, 0, 0.95, 0, 0, 0, 0.95, 0, 0.48, 0)
+material_override = SubResource("StandardMaterial3D_goblin_skin")
+mesh = SubResource("SphereMesh_goblin_head")
+
+[node name="GoblinDagger" type="MeshInstance3D" parent="EnemyC3" unique_id=1816124936]
+transform = Transform3D(0.978031, 0.20846, 0, -0.20846, 0.978031, 0, 0, 0, 1, 0.26, 0.02, -0.16)
+material_override = SubResource("StandardMaterial3D_goblin_blade")
+mesh = SubResource("BoxMesh_goblin_dagger")

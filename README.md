@@ -1,73 +1,42 @@
-# React + TypeScript + Vite
+# Cold Star
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Godot-first game project for the Cold Star migration.
 
-Currently, two official plugins are available:
+## Primary Runtime (Godot)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Use the Godot project under `godot/` as the source of truth for gameplay development.
 
-## React Compiler
+### Open and run
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. Open Godot 4.x.
+2. Import project file: `godot/project.godot`.
+3. Run the default scene.
 
-## Expanding the ESLint configuration
+See `godot/README.md` for current phase status, controls, and debug tooling.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Controls (Current Prototype)
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- Movement: `W/S`
+- Turn: `A/D`
+- Sword: `Mouse Left`
+- Zap: `Mouse Right`
+- Defend: `Space`
+- Dodge: `Shift`
+- Interact: `E`
+- Reset run: `R`
+- Debug HUD: `F3`
+- Debug wireframe: `F4`
+- Debug checklist next/toggle: `F5` / `F6`
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Project Status
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- Migration plan and phase breakdown: `MIGRATION.md`
+- Godot bootstrap + implementation status: `godot/README.md`
+- Phase 7 handoff notes: `docs/HANDOFF_GODOT.md`
+- Web prototype maintenance/deprecation policy: `docs/WEB_PROTOTYPE_STATUS.md`
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Web Prototype
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+The legacy web prototype remains in the repository as a reference implementation and fallback testbed.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+It is not the primary runtime for new feature work. For current maintenance expectations, see `docs/WEB_PROTOTYPE_STATUS.md`.

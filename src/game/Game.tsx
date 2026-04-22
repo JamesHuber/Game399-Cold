@@ -5,8 +5,25 @@ import { CuboidCollider, Physics, RigidBody, useRapier } from '@react-three/rapi
 import * as THREE from 'three'
 import { bindInput, createInputState, isDown } from './input'
 import { angleFromVec2, clamp, norm2 } from './math'
-import { resumeAudio, sfxShoot, sfxSting, sfxZap } from './audio'
-import { useGame } from './store'
+import {
+  resumeAudio,
+  sfxBlock,
+  sfxDeath,
+  sfxEnemyShoot,
+  sfxGateOpen,
+  sfxHurt,
+  sfxProjWall,
+  sfxSting,
+  sfxSwordHit,
+  sfxSwordSwing,
+  sfxZap,
+  sfxDodge,
+} from './audio'
+import { MELEE_ATTACK_RANGE, useGame } from './store'
+
+/** Half-angle of sword cone; must match `swordAttack` in store. */
+const MELEE_HALF_RAD = (52 * Math.PI) / 180
+const MELEE_SWING_DURATION = 0.22
 
 type ColliderMeta = { type: 'enemy' | 'npc' | 'node' | 'gate'; id: string }
 const ColliderMetaContext = createContext<React.MutableRefObject<Map<number, ColliderMeta>> | null>(null)
@@ -21,7 +38,7 @@ function Controls() {
 
   const moveInput = useGame((s) => s.moveInput)
   const setFacing = useGame((s) => s.setFacing)
-  const fireBullet = useGame((s) => s.fireBullet)
+  const swordAttack = useGame((s) => s.swordAttack)
   const zap = useGame((s) => s.zap)
   const interactCooldown = useGame((s) => s.interactCooldown)
   const interactNpc = useGame((s) => s.interactNpc)
@@ -53,24 +70,31 @@ function Controls() {
     const moveDir = throttle === 0 ? { x: 0, y: 0 } : norm2({ x: facing.x * throttle, y: facing.y * throttle })
     moveInput(moveDir)
 
-    // block
+    // block — cannot hold shield while attacking (mouse1); Space + click drops guard
     const blockNow = isDown(input, 'Space')
-    if (blockNow !== blockLatch.current) {
-      blockLatch.current = blockNow
-      setBlocking(blockNow)
+    const leftDown = (input.mouse.buttons & 1) === 1
+    const wantBlock = blockNow && !leftDown
+    if (wantBlock !== blockLatch.current) {
+      blockLatch.current = wantBlock
+      setBlocking(wantBlock)
     }
 
     // dodge
     const dodgeNow = isDown(input, 'ShiftLeft') || isDown(input, 'ShiftRight')
-    if (dodgeNow && !dodgeLatch.current) startDodge()
+    if (dodgeNow && !dodgeLatch.current && startDodge()) {
+      resumeAudio()
+      sfxDodge()
+    }
     dodgeLatch.current = dodgeNow
 
-    // fire (left click)
-    const leftDown = (input.mouse.buttons & 1) === 1
-    if (leftDown && !fireLatch.current) {
-      resumeAudio()
-      fireBullet()
-      sfxShoot()
+    // fire (left click) — no sword while Space is held (defend)
+    if (leftDown && !fireLatch.current && !blockNow) {
+      const swung = swordAttack()
+      if (swung !== null) {
+        resumeAudio()
+        sfxSwordSwing()
+        if (swung) sfxSwordHit()
+      }
     }
     fireLatch.current = leftDown
 
@@ -206,10 +230,48 @@ function FogAndLights() {
 }
 
 function Ground() {
+  const debugMode = useGame((s) => s.debugMode)
+  const checkerMat = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        uniforms: {
+          colorA: { value: new THREE.Color('#3a3028') },
+          colorB: { value: new THREE.Color('#262018') },
+        },
+        vertexShader: `
+          varying vec3 vWorldPos;
+          void main() {
+            vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          varying vec3 vWorldPos;
+          uniform vec3 colorA;
+          uniform vec3 colorB;
+          void main() {
+            vec2 g = floor(vWorldPos.xz);
+            float m = mod(g.x + g.y + 100000.0, 2.0);
+            vec3 c = m < 0.5 ? colorA : colorB;
+            gl_FragColor = vec4(c, 1.0);
+          }
+        `,
+      }),
+    [],
+  )
+
+  useEffect(() => {
+    return () => checkerMat.dispose()
+  }, [checkerMat])
+
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow={!debugMode}>
       <planeGeometry args={[80, 80, 1, 1]} />
-      <meshStandardMaterial color="#2a2018" roughness={1} metalness={0} />
+      {debugMode ? (
+        <primitive object={checkerMat} attach="material" />
+      ) : (
+        <meshStandardMaterial color="#2a2018" roughness={1} metalness={0} />
+      )}
     </mesh>
   )
 }
@@ -217,6 +279,8 @@ function Ground() {
 function PlayerShip() {
   const player = useGame((s) => s.player)
   const ref = useRef<THREE.Group>(null)
+  const bladeSwing =
+    player.swordSwingT > 0 ? Math.sin((1 - player.swordSwingT / 0.22) * Math.PI) * 1.15 : 0
 
   useFrame(() => {
     const g = ref.current
@@ -264,18 +328,16 @@ function PlayerShip() {
         <meshStandardMaterial color="#7a7466" roughness={0.9} metalness={0.1} />
       </mesh>
       {player.blocking ? (
-        <group position={[0, 0.1, 0.34]}>
-          {/* Main shield body */}
+        <group position={[-0.22, 0.1, -0.34]} rotation={[Math.PI / 2, 0, 0]}>
+          {/* Forward = +X local; left = −Z (not −X — that’s behind). Aligned with left arm, out toward −Z. */}
           <mesh castShadow>
             <cylinderGeometry args={[0.16, 0.16, 0.05, 20]} />
             <meshStandardMaterial color="#6b4a2f" roughness={0.95} metalness={0.05} />
           </mesh>
-          {/* Metal rim */}
           <mesh castShadow>
             <torusGeometry args={[0.16, 0.014, 10, 30]} />
             <meshStandardMaterial color="#9a917f" roughness={0.68} metalness={0.42} />
           </mesh>
-          {/* Boss */}
           <mesh position={[0, 0, 0.028]} castShadow>
             <sphereGeometry args={[0.045, 12, 12]} />
             <meshStandardMaterial color="#b59b67" roughness={0.62} metalness={0.35} />
@@ -283,15 +345,17 @@ function PlayerShip() {
         </group>
       ) : null}
 
-      {/* Sword (right arm) */}
-      <mesh position={[0.28, 0.06, 0.02]} rotation={[0, 0, -0.22]} castShadow>
-        <boxGeometry args={[0.04, 0.22, 0.03]} />
-        <meshStandardMaterial color="#918b7c" roughness={0.55} metalness={0.5} />
-      </mesh>
-      <mesh position={[0.28, -0.08, 0.02]} rotation={[0, 0, -0.22]} castShadow>
-        <boxGeometry args={[0.02, 0.28, 0.02]} />
-        <meshStandardMaterial color="#a9a291" roughness={0.45} metalness={0.58} />
-      </mesh>
+      {/* Sword (right arm) — swings on melee attack */}
+      <group position={[0.28, 0.06, 0.02]} rotation={[0, bladeSwing * 0.45, -0.22 + bladeSwing * 0.95]}>
+        <mesh castShadow>
+          <boxGeometry args={[0.04, 0.22, 0.03]} />
+          <meshStandardMaterial color="#918b7c" roughness={0.55} metalness={0.5} />
+        </mesh>
+        <mesh position={[0, -0.14, 0]} castShadow>
+          <boxGeometry args={[0.02, 0.28, 0.02]} />
+          <meshStandardMaterial color="#a9a291" roughness={0.45} metalness={0.58} />
+        </mesh>
+      </group>
 
       {/* Cloak accent */}
       <mesh position={[0, 0.08, -0.12]} castShadow>
@@ -305,34 +369,28 @@ function PlayerShip() {
           <meshBasicMaterial color="#d6b56f" transparent opacity={0.6} />
         </mesh>
       ) : null}
-    </group>
-  )
-}
 
-function Bullets() {
-  const bullets = useGame((s) => s.bullets)
-  return (
-    <group>
-      {bullets.map((b) => (
-        <group key={b.id} position={[b.pos.x, 0.2, b.pos.y]} rotation={[0, -Math.atan2(b.vel.y, b.vel.x), 0]}>
-          <mesh position={[0, 0, 0.08]}>
-            <cylinderGeometry args={[0.012, 0.012, 0.24, 8]} />
-            <meshStandardMaterial color="#7b5e3f" roughness={0.9} />
-          </mesh>
-          <mesh position={[0, 0, 0.2]} rotation={[Math.PI / 2, 0, 0]}>
-            <coneGeometry args={[0.028, 0.08, 10]} />
-            <meshStandardMaterial color="#8d8b86" roughness={0.55} metalness={0.35} />
-          </mesh>
-          <mesh position={[0, 0.03, -0.03]} rotation={[0, 0, Math.PI / 4]}>
-            <boxGeometry args={[0.012, 0.05, 0.001]} />
-            <meshStandardMaterial color="#d8d2c2" roughness={1} />
-          </mesh>
-          <mesh position={[0, -0.03, -0.03]} rotation={[0, 0, -Math.PI / 4]}>
-            <boxGeometry args={[0.012, 0.05, 0.001]} />
-            <meshStandardMaterial color="#d8d2c2" roughness={1} />
-          </mesh>
-        </group>
-      ))}
+      {/* White slash arc: shows melee hit area (cone + range) */}
+      {player.swordSwingT > 0 ? (
+        <mesh
+          position={[0, 0.055, 0]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          renderOrder={2}
+        >
+          {/* Ring lies in XY then Rx(-π/2) → XZ; angle 0 = local +X = forward (not +Z). */}
+          <ringGeometry
+            args={[0.16, MELEE_ATTACK_RANGE, 40, 1, -MELEE_HALF_RAD, MELEE_HALF_RAD * 2]}
+          />
+          <meshBasicMaterial
+            color="#ffffff"
+            transparent
+            opacity={clamp((player.swordSwingT / MELEE_SWING_DURATION) * 0.72, 0.08, 0.72)}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+      ) : null}
     </group>
   )
 }
@@ -496,9 +554,7 @@ function WorldStep() {
   const reset = useGame((s) => s.reset)
   const setPlayerPos = useGame((s) => s.setPlayerPos)
   const setEnemyPos = useGame((s) => s.setEnemyPos)
-  const applyEnemyHit = useGame((s) => s.applyEnemyHit)
   const applyPlayerDamage = useGame((s) => s.applyPlayerDamage)
-  const consumeBullets = useGame((s) => s.consumeBullets)
   const consumeEnemyProjectiles = useGame((s) => s.consumeEnemyProjectiles)
   const setNodeCharged = useGame((s) => s.setNodeCharged)
   const setGateOpen = useGame((s) => s.setGateOpen)
@@ -508,23 +564,28 @@ function WorldStep() {
   const meta = useColliderMeta()
 
   const prevOpen = useRef(false)
-  const prevBulletPos = useRef(new Map<string, { x: number; y: number }>())
   const deathLatch = useRef(false)
+  const lastContactHurtSfx = useRef(0)
 
   useFrame((_, dt) => {
     const clampedDt = Math.min(0.05, dt)
     const stateBefore = useGame.getState()
-    prevBulletPos.current.clear()
-    for (const b of stateBefore.bullets) prevBulletPos.current.set(b.id, { ...b.pos })
+    const projBefore = stateBefore.enemyProjectiles.length
 
     tick(clampedDt)
 
     const state = useGame.getState()
+    if (state.enemyProjectiles.length > projBefore) {
+      resumeAudio()
+      sfxEnemyShoot()
+    }
 
     // Auto-restart when player dies.
     if (state.player.hp <= 0) {
       if (!deathLatch.current) {
         deathLatch.current = true
+        resumeAudio()
+        sfxDeath()
         reset()
       }
       return
@@ -599,34 +660,6 @@ function WorldStep() {
       setPlayerPos({ x: px, y: pz })
     }
 
-    // Bullet -> enemy hits (Rapier raycast).
-    const bulletsToConsume: string[] = []
-    for (const b of state.bullets) {
-      const prev = prevBulletPos.current.get(b.id) ?? { x: b.pos.x - b.vel.x * clampedDt, y: b.pos.y - b.vel.y * clampedDt }
-      const dx = b.pos.x - prev.x
-      const dy = b.pos.y - prev.y
-      const len = Math.hypot(dx, dy)
-      if (len < 1e-5) continue
-
-      const ray = new rapier.Ray(new rapier.Vector3(prev.x, 0.22, prev.y), new rapier.Vector3(dx / len, 0, dy / len))
-      const hit = world.castRay(ray, len, true, undefined, undefined, undefined, undefined, (c: any) => {
-        const m = meta.current.get(c.handle)
-        // Bullets should collide with enemies and solid world walls.
-        // World-wall colliders are not registered in meta.
-        return !m || m.type === 'enemy'
-      })
-
-      if (hit) {
-        const m = meta.current.get(hit.collider.handle)
-        if (m?.type === 'enemy') {
-          applyEnemyHit(m.id, 10)
-        }
-        // Delete bullet on enemy OR wall hit.
-        bulletsToConsume.push(b.id)
-      }
-    }
-    consumeBullets(bulletsToConsume)
-
     // Enemy projectile collisions (player or wall).
     const enemyProjToConsume: string[] = []
     for (const ep of state.enemyProjectiles) {
@@ -642,6 +675,8 @@ function WorldStep() {
         return !m
       })
       if (wallHit) {
+        resumeAudio()
+        sfxProjWall()
         enemyProjToConsume.push(ep.id)
         continue
       }
@@ -653,7 +688,11 @@ function WorldStep() {
         const blocked = pstate.blocking && pstate.stamina > 0 && pstate.dodgingT <= 0
         if (!blocked) {
           applyPlayerDamage(12)
+          resumeAudio()
+          sfxHurt()
         } else {
+          resumeAudio()
+          sfxBlock()
           // Blocking absorbs projectile impact at stamina cost.
           useGame.setState((s) => ({
             player: { ...s.player, stamina: Math.max(0, s.player.stamina - 12) },
@@ -686,6 +725,12 @@ function WorldStep() {
       const blocked = p.blocking && p.stamina > 0 && p.dodgingT <= 0
       if (!blocked && p.dodgingT <= 0) {
         applyPlayerDamage(clampedDt * 20 * touchingEnemies)
+        const t = performance.now()
+        if (t - lastContactHurtSfx.current > 380) {
+          lastContactHurtSfx.current = t
+          resumeAudio()
+          sfxHurt()
+        }
       }
       // stamina drain remains handled in store via its own regen; we keep blocking effect "feel" by not draining here.
     }
@@ -782,6 +827,7 @@ function WorldStep() {
     if (open && !prevOpen.current) {
       resumeAudio()
       sfxSting()
+      sfxGateOpen()
       prevOpen.current = true
     }
   }, [gates])
@@ -795,7 +841,7 @@ export function Game() {
   return (
     <main className="app">
       <div className="viewport">
-        <Canvas dpr={[1, 1.5]} gl={{ antialias: false }}>
+        <Canvas dpr={[1, 1.5]} gl={{ antialias: false, alpha: false }}>
           <color attach="background" args={['#160f0c']} />
           <FogAndLights />
           <CameraRig />
@@ -808,7 +854,6 @@ export function Game() {
           </ColliderMetaContext.Provider>
           <Ground />
           <PlayerShip />
-          <Bullets />
           <EnemyProjectiles />
           <Enemies />
           <NPCs />
@@ -858,42 +903,7 @@ function PhysicsBodies() {
         <CuboidCollider args={[0.5, 2, 14.5]} position={[-14.5, 0.2, 0]} />
       </RigidBody>
 
-      {/* Inner keep walls */}
-      <RigidBody type="fixed" colliders={false} position={[0, 0, 0]}>
-        <group position={[0, 0.8, 4.8]}>
-          <mesh castShadow receiveShadow>
-            <boxGeometry args={[8.5, 1.6, 0.7]} />
-            <meshStandardMaterial color="#5a4638" roughness={1} />
-          </mesh>
-          <CuboidCollider args={[4.25, 0.8, 0.35]} />
-        </group>
-
-        <group position={[-5.2, 0.8, -1.2]} rotation={[0, Math.PI * 0.5, 0]}>
-          <mesh castShadow receiveShadow>
-            <boxGeometry args={[6.2, 1.6, 0.7]} />
-            <meshStandardMaterial color="#544235" roughness={1} />
-          </mesh>
-          <CuboidCollider args={[3.1, 0.8, 0.35]} />
-        </group>
-
-        <group position={[5.4, 0.8, -3.2]} rotation={[0, Math.PI * 0.5, 0]}>
-          <mesh castShadow receiveShadow>
-            <boxGeometry args={[7.2, 1.6, 0.7]} />
-            <meshStandardMaterial color="#4d3d31" roughness={1} />
-          </mesh>
-          <CuboidCollider args={[3.6, 0.8, 0.35]} />
-        </group>
-
-        <group position={[0.8, 0.8, -7.0]}>
-          <mesh castShadow receiveShadow>
-            <boxGeometry args={[6.2, 1.6, 0.7]} />
-            <meshStandardMaterial color="#5a4638" roughness={1} />
-          </mesh>
-          <CuboidCollider args={[3.1, 0.8, 0.35]} />
-        </group>
-      </RigidBody>
-
-      {/* South-west maze (see store.buildMazeBarriers) */}
+      {/* Maze barriers (store.buildMazeBarriers) */}
       {barriers.map((b) => (
         <RigidBody key={b.id} type="fixed" colliders={false} position={[b.x, 0, b.z]}>
           <group position={[0, 0.8, 0]}>

@@ -1,88 +1,98 @@
-let ctx: AudioContext | null = null
+import { Howl, Howler } from 'howler'
 
-function getCtx() {
-  if (!ctx) ctx = new AudioContext()
-  return ctx
+Howler.volume(1)
+
+let music: Howl | null = null
+
+/** Lazy Howl instances — avoids Web Audio init during module load (can break React mount). */
+const cache = new Map<string, Howl>()
+
+function sfxHowl(file: string, volume: number) {
+  const key = `${file}:${volume}`
+  let h = cache.get(key)
+  if (!h) {
+    h = new Howl({ src: [`/audio/sfx/${file}`], volume, preload: true })
+    cache.set(key, h)
+  }
+  return h
 }
 
+function ensureMusic() {
+  if (music) return
+  music = new Howl({
+    src: ['/audio/music/exploration.mp3'],
+    loop: true,
+    volume: 0.22,
+    html5: true,
+  })
+}
+
+/** Unlock audio context and start exploration music (call after user gesture). */
 export function resumeAudio() {
-  const c = getCtx()
-  if (c.state !== 'running') void c.resume()
+  const ctx = Howler.ctx
+  if (ctx && ctx.state !== 'running') void ctx.resume()
+  ensureMusic()
+  if (music && !music.playing()) music.play()
 }
 
-function envGain(c: AudioContext, t0: number, a: number, d: number, s: number, r: number) {
-  const g = c.createGain()
-  g.gain.setValueAtTime(0.0001, t0)
-  g.gain.exponentialRampToValueAtTime(1.0, t0 + a)
-  g.gain.exponentialRampToValueAtTime(Math.max(0.0001, s), t0 + a + d)
-  g.gain.exponentialRampToValueAtTime(0.0001, t0 + a + d + r)
-  return g
+export { Howler }
+
+export function sfxSwordSwing() {
+  sfxHowl('sword_swing.ogg', 0.55).play()
 }
 
-export function sfxShoot() {
-  const c = getCtx()
-  const t0 = c.currentTime
-  const osc = c.createOscillator()
-  osc.type = 'square'
-  osc.frequency.setValueAtTime(320, t0)
-  osc.frequency.exponentialRampToValueAtTime(120, t0 + 0.06)
-
-  const g = envGain(c, t0, 0.002, 0.03, 0.2, 0.08)
-  g.gain.setValueAtTime(0.12, t0)
-
-  const lp = c.createBiquadFilter()
-  lp.type = 'lowpass'
-  lp.frequency.setValueAtTime(1400, t0)
-
-  osc.connect(lp)
-  lp.connect(g)
-  g.connect(c.destination)
-  osc.start(t0)
-  osc.stop(t0 + 0.12)
+export function sfxSwordHit() {
+  sfxHowl('sword_hit.ogg', 0.65).play()
 }
 
 export function sfxZap() {
-  const c = getCtx()
-  const t0 = c.currentTime
-  const osc = c.createOscillator()
-  osc.type = 'sawtooth'
-  osc.frequency.setValueAtTime(90, t0)
-  osc.frequency.exponentialRampToValueAtTime(260, t0 + 0.08)
-
-  const g = envGain(c, t0, 0.005, 0.04, 0.15, 0.12)
-  g.gain.setValueAtTime(0.08, t0)
-
-  const hp = c.createBiquadFilter()
-  hp.type = 'highpass'
-  hp.frequency.setValueAtTime(420, t0)
-
-  osc.connect(hp)
-  hp.connect(g)
-  g.connect(c.destination)
-  osc.start(t0)
-  osc.stop(t0 + 0.18)
+  sfxHowl('zap.ogg', 0.45).play()
 }
 
 export function sfxSting() {
-  const c = getCtx()
-  const t0 = c.currentTime
-  const osc = c.createOscillator()
-  osc.type = 'triangle'
-  osc.frequency.setValueAtTime(220, t0)
-  osc.frequency.exponentialRampToValueAtTime(880, t0 + 0.12)
-
-  const g = envGain(c, t0, 0.002, 0.05, 0.4, 0.35)
-  g.gain.setValueAtTime(0.12, t0)
-
-  const bp = c.createBiquadFilter()
-  bp.type = 'bandpass'
-  bp.frequency.setValueAtTime(700, t0)
-  bp.Q.setValueAtTime(3.5, t0)
-
-  osc.connect(bp)
-  bp.connect(g)
-  g.connect(c.destination)
-  osc.start(t0)
-  osc.stop(t0 + 0.5)
+  sfxHowl('sting.ogg', 0.5).play()
 }
 
+export function sfxDodge() {
+  sfxHowl('dodge.ogg', 0.5).play()
+}
+
+export function sfxBlock() {
+  sfxHowl('block.ogg', 0.55).play()
+}
+
+export function sfxProjWall() {
+  sfxHowl('proj_wall.ogg', 0.35).play()
+}
+
+export function sfxEnemyShoot() {
+  sfxHowl('enemy_shoot.ogg', 0.4).play()
+}
+
+export function sfxHurt() {
+  sfxHowl('hurt.ogg', 0.45).play()
+}
+
+export function sfxDeath() {
+  sfxHowl('death.ogg', 0.55).play()
+}
+
+export function sfxNodeCharge() {
+  sfxHowl('node_charge.ogg', 0.5).play()
+}
+
+export function sfxUiSoft() {
+  sfxHowl('ui_soft.ogg', 0.4).play()
+}
+
+export function sfxGateLocked() {
+  sfxHowl('gate_locked.ogg', 0.45).play()
+}
+
+export function sfxRelic() {
+  sfxHowl('relic.ogg', 0.55).play()
+}
+
+export function sfxGateOpen() {
+  sfxHowl('gate_open.ogg', 0.45).play()
+}
