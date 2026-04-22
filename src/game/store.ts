@@ -445,16 +445,6 @@ const initialWorld = (): World => ({
       ],
       lineIdx: 0,
     },
-    {
-      id: 'npc-abbot',
-      pos: { x: -6, y: 4 },
-      name: 'Abbot Mirek',
-      lines: [
-        'The Black Comet omen was carved here centuries ago.',
-        'Bring me the relic beyond the gate and we may yet save this keep.',
-      ],
-      lineIdx: 0,
-    },
   ],
   nodes: [
     { id: 'n1', pos: { x: 0, y: 6 }, charged: false },

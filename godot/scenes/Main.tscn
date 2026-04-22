@@ -1227,21 +1227,6 @@ shape = SubResource("CapsuleShape3D_npc")
 material_override = SubResource("StandardMaterial3D_npc")
 mesh = SubResource("CylinderMesh_npc")
 
-[node name="Abbot" type="StaticBody3D" parent="NPCs" unique_id=2100545369]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0.3, 4)
-collision_layer = 5
-collision_mask = 0
-script = ExtResource("7")
-npc_name = "Abbot Mirek"
-lines = PackedStringArray("The Black Comet omen was carved here centuries ago.", "Bring me the relic beyond the gate and we may yet save this keep.")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="NPCs/Abbot" unique_id=1795213737]
-shape = SubResource("CapsuleShape3D_npc")
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="NPCs/Abbot" unique_id=1238418053]
-material_override = SubResource("StandardMaterial3D_npc")
-mesh = SubResource("CylinderMesh_npc")
-
 [node name="HUD" type="CanvasLayer" parent="." unique_id=900759882]
 
 [node name="Margin" type="MarginContainer" parent="HUD" unique_id=1541664767]
